@@ -535,20 +535,22 @@ const AppShell: React.FC<{
 
   const shouldCollapseTagStats = tagStats.length > 6;
 
+  const matchesActiveCriteria = React.useCallback((article: Article) => {
+    const timing = getTimeWindowState(article.startAt, article.endAt, nowTs);
+    if (timedOnly && timing.state === 'none') return false;
+    if (hideExpired && timing.state === 'expired') return false;
+    if (searchMatches && !searchMatches.has(article.guid)) return false;
+    if (activeFilters.length > 0 && !activeFilters.includes(article.aiCategory || '')) return false;
+    if (activeTagFilters.length > 0) {
+      const tags = article.tags || [];
+      if (!activeTagFilters.every((tag) => tags.includes(tag))) return false;
+    }
+    return true;
+  }, [activeFilters, activeTagFilters, hideExpired, nowTs, searchMatches, timedOnly]);
+
   const filteredArticles = React.useMemo(() => {
-    return baseArticles.filter((article) => {
-      const timing = getTimeWindowState(article.startAt, article.endAt, nowTs);
-      if (timedOnly && timing.state === 'none') return false;
-      if (hideExpired && timing.state === 'expired') return false;
-      if (searchMatches && !searchMatches.has(article.guid)) return false;
-      if (activeFilters.length > 0 && !activeFilters.includes(article.aiCategory || '')) return false;
-      if (activeTagFilters.length > 0) {
-        const tags = article.tags || [];
-        if (!activeTagFilters.every((tag) => tags.includes(tag))) return false;
-      }
-      return true;
-    });
-  }, [activeFilters, activeTagFilters, baseArticles, hideExpired, nowTs, searchMatches, timedOnly]);
+    return baseArticles.filter(matchesActiveCriteria);
+  }, [baseArticles, matchesActiveCriteria]);
 
   const ARTICLES_PER_PAGE = 12;
   const totalPages = Math.max(1, Math.ceil(filteredArticles.length / ARTICLES_PER_PAGE));
@@ -561,12 +563,12 @@ const AppShell: React.FC<{
   const articleCountByDate = React.useMemo(() => {
     if (!selectedFeed) return null;
     const map: Record<string, number> = {};
-    selectedFeed.items.forEach((article) => {
+    selectedFeed.items.filter(matchesActiveCriteria).forEach((article) => {
       const key = new Date(article.pubDate).toDateString();
       map[key] = (map[key] || 0) + 1;
     });
     return map;
-  }, [selectedFeed]);
+  }, [matchesActiveCriteria, selectedFeed]);
 
   const activeIndex = React.useMemo(() => {
     if (!activeArticle) return -1;

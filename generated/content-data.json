@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-02-09T09:55:21.130Z",
+  "generatedAt": "2026-02-09T19:25:19.554Z",
   "schools": [
     {
       "slug": "ai",
@@ -84,6 +84,10 @@
     {
       "slug": "marxism",
       "name": "马克思主义学院"
+    },
+    {
+      "slug": "unknown",
+      "name": "未知学院"
     }
   ],
   "notices": [
@@ -4094,6 +4098,11 @@
           "html": "<h1>马克思主义学院 2026-02-28 每日总结</h1>\n<ul>\n<li>今日通知已自动汇总，请优先处理置顶与限时条目。</li>\n<li>若显示“待接入”，请联系作者补充学院数据源。</li>\n<li>右侧筛选可切换“仅看限时活动”与“隐藏已过期”。</li>\n</ul>\n"
         }
       }
+    },
+    "unknown": {
+      "defaultMarkdown": "",
+      "defaultHtml": "<p>暂无总结。</p>\n",
+      "byDate": {}
     }
   }
 }

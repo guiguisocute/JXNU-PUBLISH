@@ -36,6 +36,7 @@ const SCHOOL_DEFS = [
   { slug: 'fine-arts', name: '美术学院' },
   { slug: 'pharmacy', name: '药学院' },
   { slug: 'marxism', name: '马克思主义学院' },
+  { slug: 'unknown', name: '未知学院' },
 ];
 
 const SCHOOL_MAP = new Map(SCHOOL_DEFS.map((item) => [item.slug, item.name]));
