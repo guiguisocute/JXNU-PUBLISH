@@ -14,36 +14,13 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Switch } from '@/components/ui/switch';
 import { cn } from './lib/utils';
 
-const SCHOOL_SHORT_NAME_MAP: Record<string, string> = {
-  ai: '计信院',
-  'public-funded-normal': '公院',
-  pe: '体院',
-  'chem-materials': '化材院',
-  'chem-eng': '化工院',
-  'history-tourism': '史旅院',
-  'geography-environment': '地环院',
-  'urban-construction': '城建院',
-  foreign: '外院',
-  psychology: '心院',
-  law: '政法院',
-  education: '教院',
-  'math-stat': '数统院',
-  literature: '文院',
-  journalism: '新传院',
-  'physics-electronics': '理电院',
-  'life-science': '生科院',
-  'economics-management': '经管院',
-  'fine-arts': '美院',
-  pharmacy: '药院',
-  marxism: '马院',
-};
-
 const isSummaryFeedMeta = (meta: FeedMeta): boolean => meta.id.startsWith('school-') && meta.id.endsWith('-all');
 
 type NoticeItem = {
   id: string;
   schoolSlug: string;
   schoolName: string;
+  subscriptionId: string;
   title: string;
   description: string;
   category: string;
@@ -69,7 +46,17 @@ type ConclusionItem = {
 
 type CompiledContent = {
   generatedAt: string;
-  schools: Array<{ slug: string; name: string }>;
+  schools: Array<{ slug: string; name: string; shortName?: string; icon?: string }>;
+  subscriptions: Array<{
+    id: string;
+    schoolSlug: string;
+    schoolName: string;
+    title: string;
+    url: string;
+    icon: string;
+    enabled: boolean;
+    order: number;
+  }>;
   notices: NoticeItem[];
   conclusionBySchool: Record<string, ConclusionItem>;
 };
@@ -77,6 +64,7 @@ type CompiledContent = {
 type SearchItem = {
   id: string;
   schoolSlug: string;
+  subscriptionId?: string;
   title: string;
   description: string;
   contentPlainText: string;
@@ -96,13 +84,6 @@ const toDateKey = (date: Date): string => {
   const month = String(date.getMonth() + 1).padStart(2, '0');
   const day = String(date.getDate()).padStart(2, '0');
   return `${year}-${month}-${day}`;
-};
-
-const slugifyChannel = (channel: string): string => {
-  return channel
-    .toLowerCase()
-    .replace(/[^a-z0-9\u4e00-\u9fa5]+/g, '-')
-    .replace(/^-+|-+$/g, '');
 };
 
 const markdownToPlainText = (markdown: string): string => {
@@ -333,7 +314,7 @@ const AppShell: React.FC<{
   const [activeFilters, setActiveFilters] = React.useState<string[]>([]);
   const [activeTagFilters, setActiveTagFilters] = React.useState<string[]>([]);
   const [timedOnly, setTimedOnly] = React.useState(false);
-  const [hideExpired, setHideExpired] = React.useState(false);
+  const [hideExpired, setHideExpired] = React.useState(true);
   const [currentPage, setCurrentPage] = React.useState(1);
   const [activeArticle, setActiveArticle] = React.useState<Article | null>(null);
   const [searchQuery, setSearchQuery] = React.useState('');
@@ -373,7 +354,9 @@ const AppShell: React.FC<{
 
   const schoolFeedEntries = React.useMemo(() => {
     const map = new Map<string, { meta: FeedMeta; feed: Feed }>();
-    const schoolNameBySlug = new Map(contentData.schools.map((school) => [school.slug, school.name]));
+    const subscriptionMap = new Map<string, CompiledContent['subscriptions'][number]>(
+      contentData.subscriptions.map((item) => [item.id, item])
+    );
 
     for (const school of contentData.schools) {
       const overviewId = `school-${school.slug}-all`;
@@ -391,52 +374,60 @@ const AppShell: React.FC<{
           url: `/school/${overviewId}`,
           title: summaryTitle,
           description: `${school.name}全部通知流`,
-          image: createMediaUrl(''),
+          image: createMediaUrl(school.icon || ''),
           category: school.name,
           items: [],
         },
       });
     }
 
-    for (const notice of contentData.notices) {
-      const schoolName = schoolNameBySlug.get(notice.schoolSlug) || notice.schoolName;
-      const channelName = String(notice.source?.channel || '未分组').trim();
-      const channelSlug = slugifyChannel(channelName) || 'default';
-      const feedId = `${notice.schoolSlug}-${channelSlug}`;
-      const overviewId = `school-${notice.schoolSlug}-all`;
+    for (const subscription of contentData.subscriptions.filter((item) => item.enabled)) {
+      const sourceTitle = subscription.title;
+      map.set(subscription.id, {
+        meta: {
+          id: subscription.id,
+          category: subscription.schoolName,
+          isSub: true,
+          customTitle: sourceTitle,
+          schoolSlug: subscription.schoolSlug,
+          sourceChannel: sourceTitle,
+        },
+        feed: {
+          url: `/school/${subscription.id}`,
+          title: sourceTitle,
+          description: `${subscription.schoolName} / ${sourceTitle}`,
+          image: createMediaUrl(subscription.icon || ''),
+          category: subscription.schoolName,
+          items: [],
+        },
+      });
+    }
 
-      if (!map.has(feedId)) {
-        map.set(feedId, {
-          meta: {
-            id: feedId,
-            category: schoolName,
-            isSub: true,
-            customTitle: channelName,
-            schoolSlug: notice.schoolSlug,
-            sourceChannel: channelName,
-          },
-          feed: {
-            url: `/school/${feedId}`,
-            title: channelName,
-            description: `${schoolName} / ${channelName}`,
-            image: createMediaUrl(''),
-            category: schoolName,
-            items: [],
-          },
-        });
+    for (const notice of contentData.notices) {
+      const subscription = subscriptionMap.get(notice.subscriptionId);
+      if (!subscription || !subscription.enabled) {
+        continue;
       }
+
+      const feedId = notice.subscriptionId;
+      const overviewId = `school-${notice.schoolSlug}-all`;
 
       map.get(overviewId)?.feed.items.push(toArticle(notice));
       map.get(feedId)!.feed.items.push(toArticle(notice));
     }
 
-    const withContent = Array.from(map.values()).filter((item) => item.feed.items.length > 0);
-    withContent.forEach(({ feed }) => {
+    const allFeeds = Array.from(map.values());
+    allFeeds.forEach(({ feed }) => {
       feed.items.sort((a, b) => new Date(b.pubDate).getTime() - new Date(a.pubDate).getTime());
     });
 
-    return withContent;
+    return allFeeds;
   }, [contentData]);
+
+  const schoolShortNameMap = React.useMemo<Record<string, string>>(
+    () => Object.fromEntries(contentData.schools.map((school) => [school.slug, school.shortName || school.name])),
+    [contentData.schools]
+  );
 
   const feedConfigs = React.useMemo(() => schoolFeedEntries.map((item) => item.meta), [schoolFeedEntries]);
   const feedContentCache = React.useMemo(
@@ -680,6 +671,7 @@ const AppShell: React.FC<{
         darkMode={darkMode}
         setDarkMode={setDarkMode}
         generatedAt={contentData.generatedAt}
+        updatedCount={contentData.notices.length}
       />
 
       <main className="flex-1 flex flex-col h-full bg-background relative overflow-hidden min-w-0">
@@ -687,7 +679,7 @@ const AppShell: React.FC<{
           {mode === 'dashboard' ? (
             <Dashboard
               feedEntries={schoolFeedEntries}
-              schoolShortNameMap={SCHOOL_SHORT_NAME_MAP}
+              schoolShortNameMap={schoolShortNameMap}
               isSidebarOpen={isSidebarOpen}
               setIsSidebarOpen={setIsSidebarOpen}
               onBackToDashboard={() => navigate('/')}

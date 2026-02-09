@@ -15,6 +15,7 @@ node_modules
 dist
 dist-ssr
 build
+generated
 
 # Environment variables (contains sensitive API keys)
 .env

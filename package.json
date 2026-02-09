@@ -7,6 +7,7 @@
     "dev": "vite",
     "generate:sample": "node scripts/generate-sample-content.mjs",
     "build:content": "node scripts/compile-content.mjs",
+    "validate:content": "node scripts/compile-content.mjs --validate-only",
     "prebuild": "pnpm run build:content",
     "build": "vite build",
     "preview": "vite preview",
@@ -36,7 +37,8 @@
     "react-router-dom": "^7.9.5",
     "recharts": "^3.5.0",
     "tailwind-merge": "^3.4.0",
-    "tailwindcss-animate": "^1.0.7"
+    "tailwindcss-animate": "^1.0.7",
+    "yaml": "^2.8.1"
   },
   "devDependencies": {
     "@tailwindcss/typography": "^0.5.19",

@@ -9,6 +9,8 @@
 - 数据来源：Telegram 群中的 QQ 转发消息流。
 - 写入方式：直接写入仓库，不走 PR。
 - Git 分支要求：所有 bot 自动写入与提交仅允许在 `test` 分支进行，并推送到远端 `test` 分支；禁止写入 `main/master`。
+- 可修改范围：仅允许修改 `content/**/*.md` 与 `worklog/**/*.md`。
+- 禁止修改：`config/subscriptions.yaml`、`generated/**`、`public/generated/**` 与任何脚本/代码文件。
 
 ## Input Parsing Rules
 
@@ -35,6 +37,7 @@ Frontmatter 字段必须满足项目编译要求：
 
 - `id`: 按 `YYYYMMDD-school_slug-序号` 生成，确保全局唯一。
 - `school_slug`: 按映射表判定；未命中写 `unknown`。
+- `subscription_id`: 必填，且必须与 `config/subscriptions.yaml` 中配置一一对应（由配置中的 `url` 优先、否则 `title` 自动拼接生成）。
 - `school_name`: 与 `school_slug` 对应名称。
 - `title`: bot 自主总结（不要求逐字）。
 - `description`: bot 自主总结，长度必须在 80~150 字。
@@ -67,6 +70,16 @@ Frontmatter 字段必须满足项目编译要求：
 
 ## School Mapping Rules
 
+学院与订阅映射由 `config/subscriptions.yaml` 固定定义，bot 只读不可改。
+
+配置结构约束（供识别与校验使用）：
+
+- `schools` 为数组，每个学院下包含 `subscriptions` 数组。
+- 学院层可维护 `icon`；订阅层可维护 `icon`。
+- 订阅层仅使用 `title`、`url`、`icon`、`enabled`、`order` 等字段。
+- 不使用 `sub-title` 字段。
+- `subscription_id` 不手写：由编译器按 `url` 优先、否则 `title` 自动生成。
+
 按以下顺序判断 `school_slug`：
 
 1. `来源群` 精确映射。
@@ -74,7 +87,7 @@ Frontmatter 字段必须满足项目编译要求：
 3. 正文关键词映射。
 4. 未命中 -> `unknown`。
 
-在规则文件内维护映射表（此处由人工持续更新，若未找到则根据内容灵活联想）：
+映射表由人工维护在配置文件中，bot 不得改动配置：
 
 ```md
 ## School Mapping Table
@@ -108,7 +121,7 @@ Frontmatter 字段必须满足项目编译要求：
 
 ## Validation And Output Rules
 
-- 写入完成后必须执行 `pnpm run build:content`。
+- 写入完成后必须执行 `pnpm run validate:content`（仅校验，不生成产物）。
 - 构建成功后，bot 必须将本次变更提交并推送到仓库 `test` 分支。
 - 编译失败时：
   - 保留已写文件，不回滚。
@@ -120,3 +133,4 @@ Frontmatter 字段必须满足项目编译要求：
 - 不自动设置 `pinned: true`。
 - 不脱敏QQ号信息。
 - 不修改正文原文内容（除去转发头和空白）。
+- 不改订阅配置与编译产物文件。

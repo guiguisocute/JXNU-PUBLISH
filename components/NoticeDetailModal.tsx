@@ -273,7 +273,7 @@ export const NoticeDetailModal: React.FC<NoticeDetailModalProps> = ({
                     </div>
                   )}
                   {timing.state === 'expired' && (
-                    <span className="text-[11px] px-2 py-1 rounded border border-zinc-700/60 bg-zinc-800/70 text-zinc-300 font-bold">已过期</span>
+                    <span className="text-[11px] px-2 py-1 rounded border border-rose-300/80 bg-rose-50 text-rose-700 font-bold dark:border-rose-300/60 dark:bg-rose-500/20 dark:text-rose-100">已过期</span>
                   )}
                   {article.aiCategory && (
                     <span className="text-[11px] bg-primary text-primary-foreground px-2 py-1 rounded border border-primary/80 font-semibold">{article.aiCategory}</span>

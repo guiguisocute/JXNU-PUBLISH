@@ -285,7 +285,7 @@ export const ArticleCard: React.FC<ArticleCardProps> = React.memo(({
                 <time className="leading-none">{formattedDateTime}</time>
               </div>
               {timing.state === 'expired' ? (
-                <span className="text-[10px] px-2 py-0.5 rounded border border-zinc-700/60 bg-zinc-800/70 text-zinc-300 font-bold">已过期</span>
+                <span className="text-[10px] px-2 py-0.5 rounded border border-rose-300/80 bg-rose-50 text-rose-700 font-bold dark:border-rose-300/60 dark:bg-rose-500/20 dark:text-rose-100">已过期</span>
               ) : (
                 <div className="flex items-center gap-1 text-primary font-bold text-[10px] uppercase tracking-tight opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-all transform translate-x-0 md:translate-x-2 md:group-hover:translate-x-0">
                   <span>阅读全文</span>

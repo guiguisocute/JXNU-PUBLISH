@@ -6,7 +6,8 @@ JXNU PUBLISH 是一个基于 React + Vite 的静态通知聚合站，面向江�
 
 - 在 `content/card` 维护通知卡片
 - 在 `content/conclusion` 维护学院总结与按日总结
-- 通过脚本编译为前端可直接加载的 `generated/*.json`
+- 通过 `config/subscriptions.yaml` 严格定义订阅结构
+- 通过脚本编译为前端可直接加载的 `public/generated/*.json`
 - 前端按学院、日期、标签和时效状态进行浏览与筛选
 
 ---
@@ -77,9 +78,42 @@ pnpm run preview
 
 - `content/card/*.md`：通知卡片正文与 frontmatter
 - `content/conclusion/*.md`：学院总结与 `daily` 按日总结
-- `generated/*.json|ts`：编译生成数据（脚本产物）
+- `config/subscriptions.yaml`：订阅结构与学院映射（唯一配置源）
 - `public/generated/*.json`：前端运行时加载数据
 - `public/covers/*`：由 `content/card/covers` 同步的封面资源
+
+---
+
+## 订阅配置结构
+
+`config/subscriptions.yaml` 采用“学院包裹订阅源”的层级结构：
+
+- 学院层字段：`slug`、`name`、`short_name`、`order`、`icon`
+- 订阅层字段：`title`、`url`、`icon`、`enabled`、`order`
+- `subscription_id` 由编译脚本自动生成，不在 YAML 手写：
+  - 优先使用 `url` 参与拼接
+  - `url` 为空时使用 `title`
+  - 规则：`<school_slug>-<slugify(url 或 title)>`
+
+示例：
+
+```yaml
+version: 2
+schools:
+  - slug: ai
+    name: 人工智能学院
+    short_name: 计信院
+    order: 10
+    icon: ""
+    subscriptions:
+      - title: 25-26学年学生干部通知群
+        url: ""
+        icon: ""
+        enabled: true
+        order: 30
+```
+
+说明：`order` 为学院内排序；若同一学院下两个订阅生成出相同 id，编译会直接报错。
 
 ---
 
@@ -89,6 +123,7 @@ pnpm run preview
 ---
 id: "20260201-ai-001"
 school_slug: "ai"
+subscription_id: "ai-25-26学年学生干部通知群"
 school_name: "人工智能学院"
 title: "示例通知"
 description: "通知摘要"

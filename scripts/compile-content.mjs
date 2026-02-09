@@ -2,6 +2,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import matter from 'gray-matter';
 import { marked } from 'marked';
+import YAML from 'yaml';
 
 const ROOT = process.cwd();
 const CONTENT_DIR = path.join(ROOT, 'content');
@@ -9,37 +10,11 @@ const CARD_DIR = path.join(CONTENT_DIR, 'card');
 const CARD_COVERS_DIR = path.join(CARD_DIR, 'covers');
 const CONCLUSION_DIR = path.join(CONTENT_DIR, 'conclusion');
 const CONTENT_IMG_DIR = path.join(CONTENT_DIR, 'img');
-const GENERATED_DIR = path.join(ROOT, 'generated');
 const PUBLIC_GENERATED_DIR = path.join(ROOT, 'public', 'generated');
 const PUBLIC_DIR = path.join(ROOT, 'public');
+const PUBLIC_IMG_DIR = path.join(PUBLIC_DIR, 'img');
 const PUBLIC_COVERS_DIR = path.join(PUBLIC_DIR, 'covers');
-
-const SCHOOL_DEFS = [
-  { slug: 'ai', name: '人工智能学院' },
-  { slug: 'public-funded-normal', name: '公费师范生学院' },
-  { slug: 'pe', name: '体育学院' },
-  { slug: 'chem-materials', name: '化学与材料学院' },
-  { slug: 'chem-eng', name: '化学工程学院' },
-  { slug: 'history-tourism', name: '历史文化与旅游学院' },
-  { slug: 'geography-environment', name: '地理与环境学院' },
-  { slug: 'urban-construction', name: '城市建设学院' },
-  { slug: 'foreign', name: '外国语学院' },
-  { slug: 'psychology', name: '心理学院' },
-  { slug: 'law', name: '政法学院' },
-  { slug: 'education', name: '教育学院' },
-  { slug: 'math-stat', name: '数学与统计学院' },
-  { slug: 'literature', name: '文学院' },
-  { slug: 'journalism', name: '新闻与传播学院' },
-  { slug: 'physics-electronics', name: '物理与通信电子学院' },
-  { slug: 'life-science', name: '生命科学学院' },
-  { slug: 'economics-management', name: '经济与管理学院' },
-  { slug: 'fine-arts', name: '美术学院' },
-  { slug: 'pharmacy', name: '药学院' },
-  { slug: 'marxism', name: '马克思主义学院' },
-  { slug: 'unknown', name: '未知学院' },
-];
-
-const SCHOOL_MAP = new Map(SCHOOL_DEFS.map((item) => [item.slug, item.name]));
+const CONFIG_PATH = path.join(ROOT, 'config', 'subscriptions.yaml');
 
 const fail = (message, filePath) => {
   const suffix = filePath ? `\nFile: ${path.relative(ROOT, filePath)}` : '';
@@ -63,7 +38,7 @@ const walkMarkdownFiles = async (dir) => {
 
 const toIso = (value, filePath) => {
   const date = new Date(value);
-  if (Number.isNaN(date.getTime())) fail(`Invalid published date: ${String(value)}`, filePath);
+  if (Number.isNaN(date.getTime())) fail(`Invalid date: ${String(value)}`, filePath);
   return date.toISOString();
 };
 
@@ -105,7 +80,102 @@ const markdownToPlainText = (markdown) => markdown
   .replace(/\s+/g, ' ')
   .trim();
 
-const loadCards = async () => {
+const ensureString = (value, fieldName, filePath) => {
+  const text = String(value || '').trim();
+  if (!text) fail(`Missing ${fieldName}`, filePath);
+  return text;
+};
+
+const slugifyChannel = (value) => value
+  .toLowerCase()
+  .replace(/[^a-z0-9\u4e00-\u9fa5]+/g, '-')
+  .replace(/^-+|-+$/g, '');
+
+const parseConfig = async () => {
+  const raw = await fs.readFile(CONFIG_PATH, 'utf8');
+  const data = YAML.parse(raw);
+  if (!data || typeof data !== 'object') fail('config/subscriptions.yaml is invalid');
+  if (!Array.isArray(data.schools) || data.schools.length === 0) fail('config/schools must be a non-empty array', CONFIG_PATH);
+
+  const schools = data.schools.map((item, index) => {
+    if (!item || typeof item !== 'object') fail(`school at index ${index} is invalid`, CONFIG_PATH);
+    const subscriptions = Array.isArray(item.subscriptions) ? item.subscriptions : null;
+    if (!subscriptions || subscriptions.length === 0) {
+      fail(`schools[${index}].subscriptions must be a non-empty array`, CONFIG_PATH);
+    }
+
+    return {
+      slug: ensureString(item.slug, `schools[${index}].slug`, CONFIG_PATH),
+      name: ensureString(item.name, `schools[${index}].name`, CONFIG_PATH),
+      shortName: String(item.short_name || '').trim(),
+      icon: String(item.icon || '').trim(),
+      order: Number.isFinite(Number(item.order)) ? Number(item.order) : index,
+      subscriptions,
+    };
+  });
+
+  const schoolSlugSet = new Set();
+  for (const school of schools) {
+    if (schoolSlugSet.has(school.slug)) fail(`Duplicate school slug in config: ${school.slug}`, CONFIG_PATH);
+    schoolSlugSet.add(school.slug);
+  }
+
+  const subscriptions = [];
+  for (const school of schools) {
+    for (let index = 0; index < school.subscriptions.length; index += 1) {
+      const item = school.subscriptions[index];
+      if (!item || typeof item !== 'object') {
+        fail(`schools[${school.slug}].subscriptions[${index}] is invalid`, CONFIG_PATH);
+      }
+
+      const title = ensureString(item.title, `schools[${school.slug}].subscriptions[${index}].title`, CONFIG_PATH);
+      const url = String(item.url || '').trim();
+      const key = url || title;
+      const suffix = slugifyChannel(key);
+      const rawIcon = String(item.icon || '').trim();
+      const isWaitingSource = title.includes('待接入');
+      if (!suffix) {
+        fail(`schools[${school.slug}].subscriptions[${index}] has empty slug key`, CONFIG_PATH);
+      }
+
+      subscriptions.push({
+        id: `${school.slug}-${suffix}`,
+        schoolSlug: school.slug,
+        schoolName: school.name,
+        schoolIcon: school.icon,
+        title,
+        url,
+        icon: rawIcon || (isWaitingSource ? '/img/subicon/waiting-dots.svg' : '/img/subicon/group-default.svg'),
+        enabled: item.enabled !== false,
+        order: Number.isFinite(Number(item.order)) ? Number(item.order) : index,
+      });
+    }
+  }
+
+  const subscriptionIdSet = new Set();
+  for (const sub of subscriptions) {
+    if (subscriptionIdSet.has(sub.id)) fail(`Duplicate subscription id in config: ${sub.id}`, CONFIG_PATH);
+    subscriptionIdSet.add(sub.id);
+  }
+
+  schools.sort((a, b) => a.order - b.order || a.slug.localeCompare(b.slug));
+  const schoolOrderMap = new Map(schools.map((item, idx) => [item.slug, idx]));
+  subscriptions.sort((a, b) => {
+    const schoolDiff = (schoolOrderMap.get(a.schoolSlug) ?? 9999) - (schoolOrderMap.get(b.schoolSlug) ?? 9999);
+    if (schoolDiff !== 0) return schoolDiff;
+    if (a.order !== b.order) return a.order - b.order;
+    return a.id.localeCompare(b.id, 'zh-CN');
+  });
+
+  return {
+    schools: schools.map(({ subscriptions: _subs, ...rest }) => rest),
+    subscriptions,
+    schoolMap: new Map(schools.map(({ subscriptions: _subs, ...rest }) => [rest.slug, rest])),
+    subscriptionMap: new Map(subscriptions.map((item) => [item.id, item])),
+  };
+};
+
+const loadCards = async ({ schoolMap, subscriptionMap }) => {
   const files = await walkMarkdownFiles(CARD_DIR);
   const notices = [];
   const seen = new Set();
@@ -118,9 +188,17 @@ const loadCards = async () => {
     if (seen.has(id)) fail(`Duplicate card id: ${id}`, filePath);
     seen.add(id);
 
-    const schoolSlug = String(parsed.data.school_slug || '').trim();
-    if (!schoolSlug) fail('Missing school_slug', filePath);
-    if (!SCHOOL_MAP.has(schoolSlug)) fail(`Invalid school_slug: ${schoolSlug}`, filePath);
+    const schoolSlug = ensureString(parsed.data.school_slug, 'school_slug', filePath);
+    if (!schoolMap.has(schoolSlug)) fail(`Invalid school_slug: ${schoolSlug}`, filePath);
+    const school = schoolMap.get(schoolSlug);
+
+    const subscriptionId = ensureString(parsed.data.subscription_id, 'subscription_id', filePath);
+    const subscription = subscriptionMap.get(subscriptionId);
+    if (!subscription) fail(`Invalid subscription_id: ${subscriptionId}`, filePath);
+    if (!subscription.enabled) fail(`subscription_id is disabled: ${subscriptionId}`, filePath);
+    if (subscription.schoolSlug !== schoolSlug) {
+      fail(`subscription_id(${subscriptionId}) does not belong to school_slug(${schoolSlug})`, filePath);
+    }
 
     const parsedStart = parsed.data.start_at ? toIso(parsed.data.start_at, filePath) : '';
     const parsedEnd = parsed.data.end_at ? toIso(parsed.data.end_at, filePath) : '';
@@ -132,7 +210,8 @@ const loadCards = async () => {
     notices.push({
       id,
       schoolSlug,
-      schoolName: String(parsed.data.school_name || SCHOOL_MAP.get(schoolSlug) || schoolSlug),
+      schoolName: String(parsed.data.school_name || school?.name || schoolSlug),
+      subscriptionId,
       title: String(parsed.data.title || '').trim(),
       description: String(parsed.data.description || markdownToPlainText(markdown).slice(0, 180) || '').trim(),
       category: String(parsed.data.category || '未分类'),
@@ -144,7 +223,7 @@ const loadCards = async () => {
       startAt: hasBothWindow ? parsedStart : '',
       endAt: hasBothWindow ? parsedEnd : '',
       source: {
-        channel: String(parsed.data.source?.channel || '').trim(),
+        channel: String(parsed.data.source?.channel || subscription.title || '').trim(),
         sender: String(parsed.data.source?.sender || '').trim(),
       },
       attachments: normalizeAttachments(parsed.data.attachments, filePath),
@@ -157,11 +236,11 @@ const loadCards = async () => {
   return notices;
 };
 
-const loadConclusions = async () => {
+const loadConclusions = async ({ schools, schoolMap }) => {
   const files = await walkMarkdownFiles(CONCLUSION_DIR);
   const bySchool = {};
 
-  for (const school of SCHOOL_DEFS) {
+  for (const school of schools) {
     bySchool[school.slug] = {
       defaultMarkdown: '',
       defaultHtml: '<p>暂无总结。</p>\n',
@@ -173,7 +252,7 @@ const loadConclusions = async () => {
     const raw = await fs.readFile(filePath, 'utf8');
     const parsed = matter(raw);
     const schoolSlug = String(parsed.data.school_slug || path.basename(filePath, '.md')).trim();
-    if (!SCHOOL_MAP.has(schoolSlug)) fail(`Conclusion has invalid school_slug: ${schoolSlug}`, filePath);
+    if (!schoolMap.has(schoolSlug)) fail(`Conclusion has invalid school_slug: ${schoolSlug}`, filePath);
 
     const markdown = (parsed.content || '').trim();
     const daily = parsed.data.daily;
@@ -200,10 +279,14 @@ const loadConclusions = async () => {
   return bySchool;
 };
 
-const compile = (notices, conclusions) => {
+const compile = ({ notices, conclusions, schools, subscriptions, schoolMap }) => {
+  const schoolOrderMap = new Map(schools.map((item, index) => [item.slug, index]));
+  const subscriptionOrderMap = new Map(subscriptions.map((item, index) => [item.id, index]));
+
   const searchIndex = notices.map((notice) => ({
     id: notice.id,
     schoolSlug: notice.schoolSlug,
+    subscriptionId: notice.subscriptionId,
     title: notice.title,
     description: notice.description,
     category: notice.category,
@@ -213,9 +296,10 @@ const compile = (notices, conclusions) => {
   }));
 
   notices.sort((a, b) => {
-    if (a.schoolSlug !== b.schoolSlug) {
-      return SCHOOL_DEFS.findIndex((item) => item.slug === a.schoolSlug) - SCHOOL_DEFS.findIndex((item) => item.slug === b.schoolSlug);
-    }
+    const schoolDiff = (schoolOrderMap.get(a.schoolSlug) ?? 9999) - (schoolOrderMap.get(b.schoolSlug) ?? 9999);
+    if (schoolDiff !== 0) return schoolDiff;
+    const subscriptionDiff = (subscriptionOrderMap.get(a.subscriptionId) ?? 9999) - (subscriptionOrderMap.get(b.subscriptionId) ?? 9999);
+    if (subscriptionDiff !== 0) return subscriptionDiff;
     if (a.pinned !== b.pinned) return a.pinned ? -1 : 1;
     const diff = new Date(b.published).getTime() - new Date(a.published).getTime();
     if (diff !== 0) return diff;
@@ -224,7 +308,17 @@ const compile = (notices, conclusions) => {
 
   return {
     generatedAt: new Date().toISOString(),
-    schools: SCHOOL_DEFS,
+    schools: schools.map((item) => ({ slug: item.slug, name: item.name, shortName: item.shortName, icon: item.icon || '' })),
+    subscriptions: subscriptions.map((item) => ({
+      id: item.id,
+      schoolSlug: item.schoolSlug,
+      schoolName: schoolMap.get(item.schoolSlug)?.name || item.schoolName || item.schoolSlug,
+      title: item.title,
+      url: item.url,
+      icon: item.icon,
+      enabled: item.enabled,
+      order: item.order,
+    })),
     notices,
     conclusionBySchool: conclusions,
     searchIndex,
@@ -232,20 +326,15 @@ const compile = (notices, conclusions) => {
 };
 
 const writeOutputs = async (compiled) => {
-  await fs.mkdir(GENERATED_DIR, { recursive: true });
   await fs.mkdir(PUBLIC_GENERATED_DIR, { recursive: true });
 
   const contentData = {
     generatedAt: compiled.generatedAt,
     schools: compiled.schools,
+    subscriptions: compiled.subscriptions,
     notices: compiled.notices,
     conclusionBySchool: compiled.conclusionBySchool,
   };
-
-  await fs.writeFile(path.join(GENERATED_DIR, 'content-data.json'), `${JSON.stringify(contentData, null, 2)}\n`, 'utf8');
-  await fs.writeFile(path.join(GENERATED_DIR, 'search-index.json'), `${JSON.stringify(compiled.searchIndex, null, 2)}\n`, 'utf8');
-  await fs.writeFile(path.join(GENERATED_DIR, 'content-data.ts'), `export const contentData = ${JSON.stringify(contentData, null, 2)} as const;\n`, 'utf8');
-  await fs.writeFile(path.join(GENERATED_DIR, 'search-index.ts'), `export const searchIndex = ${JSON.stringify(compiled.searchIndex, null, 2)} as const;\n`, 'utf8');
 
   await fs.writeFile(path.join(PUBLIC_GENERATED_DIR, 'content-data.json'), `${JSON.stringify(contentData, null, 2)}\n`, 'utf8');
   await fs.writeFile(path.join(PUBLIC_GENERATED_DIR, 'search-index.json'), `${JSON.stringify(compiled.searchIndex, null, 2)}\n`, 'utf8');
@@ -254,11 +343,18 @@ const writeOutputs = async (compiled) => {
 const syncStaticAssets = async () => {
   await fs.mkdir(PUBLIC_DIR, { recursive: true });
   await fs.mkdir(PUBLIC_COVERS_DIR, { recursive: true });
+  await fs.mkdir(PUBLIC_IMG_DIR, { recursive: true });
 
   try {
     await fs.cp(CARD_COVERS_DIR, PUBLIC_COVERS_DIR, { recursive: true, force: true });
   } catch {
     // ignore missing covers directory
+  }
+
+  try {
+    await fs.cp(CONTENT_IMG_DIR, PUBLIC_IMG_DIR, { recursive: true, force: true });
+  } catch {
+    // ignore missing image directory
   }
 
   const iconSource = path.join(CONTENT_IMG_DIR, 'icon.ico');
@@ -271,9 +367,23 @@ const syncStaticAssets = async () => {
 };
 
 const main = async () => {
-  const notices = await loadCards();
-  const conclusions = await loadConclusions();
-  const compiled = compile(notices, conclusions);
+  const validateOnly = process.argv.includes('--validate-only');
+  const config = await parseConfig();
+  const notices = await loadCards(config);
+  const conclusions = await loadConclusions(config);
+  const compiled = compile({
+    notices,
+    conclusions,
+    schools: config.schools,
+    subscriptions: config.subscriptions,
+    schoolMap: config.schoolMap,
+  });
+
+  if (validateOnly) {
+    console.log(`Validated ${compiled.notices.length} card notices.`);
+    return;
+  }
+
   await writeOutputs(compiled);
   await syncStaticAssets();
   console.log(`Compiled ${compiled.notices.length} card notices.`);

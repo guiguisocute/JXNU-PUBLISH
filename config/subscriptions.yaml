@@ -1,0 +1,259 @@
+version: 2
+schools:
+  - slug: ai
+    name: 人工智能学院
+    short_name: 计信院
+    order: 10
+    icon: /img/schoolicon/ai.png
+    subscriptions:
+      - title: 22-24级团支书
+        url: ""
+        icon: ""
+        enabled: true
+        order: 10
+      - title: 24级计算机心委+学委
+        url: ""
+        icon: ""
+        enabled: true
+        order: 20
+      - title: 25-26学年学生干部通知群
+        url: ""
+        icon: ""
+        enabled: true
+        order: 30
+      - title: 测试订阅通过程度
+        url: ""
+        icon: ""
+        enabled: true
+        order: 40
+  - slug: public-funded-normal
+    name: 公费师范生学院
+    short_name: 公院
+    order: 20
+    icon: /img/schoolicon/public-funded-normal.jpg
+    subscriptions:
+      - title: 待接入
+        url: ""
+        icon: ""
+        enabled: true
+        order: 10
+  - slug: pe
+    name: 体育学院
+    short_name: 体院
+    order: 30
+    icon: /img/schoolicon/pe.jpg
+    subscriptions:
+      - title: 待接入
+        url: ""
+        icon: ""
+        enabled: true
+        order: 10
+  - slug: chem-materials
+    name: 化学与材料学院
+    short_name: 化材院
+    order: 40
+    icon: /img/schoolicon/chem-materials.jpg
+    subscriptions:
+      - title: 待接入
+        url: ""
+        icon: ""
+        enabled: true
+        order: 10
+  - slug: chem-eng
+    name: 化学工程学院
+    short_name: 化工院
+    order: 50
+    icon: /img/schoolicon/chem-eng.png
+    subscriptions:
+      - title: 待接入
+        url: ""
+        icon: ""
+        enabled: true
+        order: 10
+  - slug: history-tourism
+    name: 历史文化与旅游学院
+    short_name: 史旅院
+    order: 60
+    icon: /img/schoolicon/history-tourism.jpg
+    subscriptions:
+      - title: 待接入
+        url: ""
+        icon: ""
+        enabled: true
+        order: 10
+  - slug: geography-environment
+    name: 地理与环境学院
+    short_name: 地环院
+    order: 70
+    icon: /img/schoolicon/geography-environment.jpg
+    subscriptions:
+      - title: 待接入
+        url: ""
+        icon: ""
+        enabled: true
+        order: 10
+  - slug: urban-construction
+    name: 城市建设学院
+    short_name: 城建院
+    order: 80
+    icon: /img/schoolicon/urban-construction.jpg
+    subscriptions:
+      - title: 待接入
+        url: ""
+        icon: ""
+        enabled: true
+        order: 10
+  - slug: foreign
+    name: 外国语学院
+    short_name: 外院
+    order: 90
+    icon: /img/schoolicon/foreign.jpg
+    subscriptions:
+      - title: 待接入
+        url: ""
+        icon: ""
+        enabled: true
+        order: 10
+  - slug: psychology
+    name: 心理学院
+    short_name: 心院
+    order: 100
+    icon: /img/schoolicon/psychology.jpg
+    subscriptions:
+      - title: 待接入
+        url: ""
+        icon: ""
+        enabled: true
+        order: 10
+  - slug: law
+    name: 政法学院
+    short_name: 政法院
+    order: 110
+    icon: /img/schoolicon/law.jpg
+    subscriptions:
+      - title: 待接入
+        url: ""
+        icon: ""
+        enabled: true
+        order: 10
+  - slug: education
+    name: 教育学院
+    short_name: 教院
+    order: 120
+    icon: /img/schoolicon/education.jpg
+    subscriptions:
+      - title: 待接入
+        url: ""
+        icon: ""
+        enabled: true
+        order: 10
+  - slug: math-stat
+    name: 数学与统计学院
+    short_name: 数统院
+    order: 130
+    icon: /img/schoolicon/math-stat.jpg
+    subscriptions:
+      - title: 待接入
+        url: ""
+        icon: ""
+        enabled: true
+        order: 10
+  - slug: literature
+    name: 文学院
+    short_name: 文院
+    order: 140
+    icon: /img/schoolicon/literature.jpg
+    subscriptions:
+      - title: 待接入
+        url: ""
+        icon: ""
+        enabled: true
+        order: 10
+  - slug: journalism
+    name: 新闻与传播学院
+    short_name: 新传院
+    order: 150
+    icon: /img/schoolicon/journalism.jpg
+    subscriptions:
+      - title: 待接入
+        url: ""
+        icon: ""
+        enabled: true
+        order: 10
+  - slug: physics-electronics
+    name: 物理与通信电子学院
+    short_name: 理电院
+    order: 160
+    icon: /img/schoolicon/physics-electronics.jpg
+    subscriptions:
+      - title: 待接入
+        url: ""
+        icon: ""
+        enabled: true
+        order: 10
+  - slug: life-science
+    name: 生命科学学院
+    short_name: 生科院
+    order: 170
+    icon: /img/schoolicon/life-science.jpg
+    subscriptions:
+      - title: 待接入
+        url: ""
+        icon: ""
+        enabled: true
+        order: 10
+  - slug: economics-management
+    name: 经济与管理学院
+    short_name: 经管院
+    order: 180
+    icon: /img/schoolicon/economics-management.jpg
+    subscriptions:
+      - title: 待接入
+        url: ""
+        icon: ""
+        enabled: true
+        order: 10
+  - slug: fine-arts
+    name: 美术学院
+    short_name: 美院
+    order: 190
+    icon: /img/schoolicon/fine-arts.jpg
+    subscriptions:
+      - title: 待接入
+        url: ""
+        icon: ""
+        enabled: true
+        order: 10
+  - slug: pharmacy
+    name: 药学院
+    short_name: 药院
+    order: 200
+    icon: /img/schoolicon/pharmacy.jpg
+    subscriptions:
+      - title: 待接入
+        url: ""
+        icon: ""
+        enabled: true
+        order: 10
+  - slug: marxism
+    name: 马克思主义学院
+    short_name: 马院
+    order: 210
+    icon: /img/schoolicon/marxism.jpg
+    subscriptions:
+      - title: 待接入
+        url: ""
+        icon: ""
+        enabled: true
+        order: 10
+  - slug: unknown
+    name: 未知学院
+    short_name: 未知
+    order: 999
+    icon: /JXNUlogo.png
+    subscriptions:
+      - title: 未知来源
+        url: ""
+        icon: ""
+        enabled: true
+        order: 10

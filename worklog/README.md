@@ -31,7 +31,7 @@
 - card_id: 原文片段
 
 ## 构建结果
-- 命令: pnpm run build:content
+- 命令: pnpm run validate:content
 - 状态: 成功 | 失败
 - 详情: ...
 

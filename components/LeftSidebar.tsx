@@ -50,6 +50,7 @@ interface LeftSidebarProps {
   darkMode: boolean;
   setDarkMode: (dark: boolean) => void;
   generatedAt: string;
+  updatedCount: number;
 }
 
 const getNodeByPath = (groupedFeeds: Map<string, CategoryNode>, path: string): CategoryNode | null => {
@@ -118,6 +119,7 @@ export const LeftSidebar: React.FC<LeftSidebarProps> = ({
   darkMode,
   setDarkMode,
   generatedAt,
+  updatedCount,
 }) => {
   const [nowTs, setNowTs] = React.useState(() => Date.now());
 
@@ -170,7 +172,7 @@ export const LeftSidebar: React.FC<LeftSidebarProps> = ({
   }, [elapsedSinceGenerated.hours]);
 
   const elapsedLabel = React.useMemo(() => {
-    return `上一次更新：${elapsedSinceGenerated.hours}小时${elapsedSinceGenerated.minutes}分${elapsedSinceGenerated.seconds}秒 前`;
+    return `上次更新：${elapsedSinceGenerated.hours}h${elapsedSinceGenerated.minutes}m${elapsedSinceGenerated.seconds}s 前`;
   }, [elapsedSinceGenerated.hours, elapsedSinceGenerated.minutes, elapsedSinceGenerated.seconds]);
 
   const renderSubfolder = (node: CategoryNode) => {
@@ -466,7 +468,7 @@ export const LeftSidebar: React.FC<LeftSidebarProps> = ({
           <Button variant="outline" size="icon" className="h-10 w-10 md:h-9 md:w-9" onClick={() => setDarkMode(!darkMode)} title={darkMode ? "切换到浅色模式" : "切换到深色模式"}>
             {darkMode ? <Sun className="w-5 h-5 md:w-4 md:h-4" /> : <Moon className="w-5 h-5 md:w-4 md:h-4" />}
           </Button>
-          <div className="min-w-0 flex-1 rounded-xl border bg-background/90 px-3 py-2 shadow-sm">
+          <div className="relative min-w-0 flex-1 rounded-xl border bg-background/90 px-3 py-2 shadow-sm">
             <div className="flex items-center gap-2 min-w-0">
               <span className="relative inline-flex h-2.5 w-2.5 shrink-0">
                 <span className={cn('absolute inline-flex h-full w-full rounded-full animate-ping', updateHealth.pulseClass)} />
@@ -474,8 +476,13 @@ export const LeftSidebar: React.FC<LeftSidebarProps> = ({
               </span>
               <span className="text-[10px] font-black tracking-wider text-muted-foreground">更新状态：{updateHealth.label}</span>
             </div>
-            <div className="mt-1 text-[10px] font-bold text-foreground/85 leading-tight truncate" title={elapsedLabel}>
-              {elapsedLabel}
+            <div className="mt-1 flex items-center gap-2 min-w-0">
+              <div className="min-w-0 flex-1 text-[9px] font-bold text-foreground/85 leading-tight truncate" title={elapsedLabel}>
+                {elapsedLabel}
+              </div>
+              <div className="shrink-0 text-[9px] font-black text-primary leading-none" title={`更新 ${updatedCount} 条`}>
+                {`更新 ${updatedCount} 条`}
+              </div>
             </div>
           </div>
         </div>
