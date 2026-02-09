@@ -31,6 +31,7 @@ interface ArticleListProps {
   onTagSelect: (tag: string) => void;
   searchQuery: string;
   onSearchQueryChange: (value: string) => void;
+  onResetFilters: () => void;
   paginatedArticlesWithCategory: any[];
   readArticleIds: Set<string>;
   handleArticleSelect: (article: Article) => void;
@@ -68,6 +69,7 @@ const ArticleListComponent: React.FC<ArticleListProps> = ({
   onTagSelect,
   searchQuery,
   onSearchQueryChange,
+  onResetFilters,
   paginatedArticlesWithCategory,
   readArticleIds,
   handleArticleSelect,
@@ -93,6 +95,10 @@ const ArticleListComponent: React.FC<ArticleListProps> = ({
   const [isSearchOpen, setIsSearchOpen] = React.useState(false);
   const touchStartRef = React.useRef<number>(0);
   const rafRef = React.useRef<number | null>(null);
+  const prevPageRef = React.useRef(currentPage);
+  const prevSearchRef = React.useRef(searchQuery);
+  const prevFilterKeyRef = React.useRef(`${activeFilters.join('|')}::${activeTagFilters.join('|')}`);
+  const prevSelectedDateRef = React.useRef<number | null>(selectedDate ? selectedDate.getTime() : null);
 
   const getViewport = React.useCallback(() => {
     return articleListRef.current?.querySelector(
@@ -123,6 +129,42 @@ const ArticleListComponent: React.FC<ArticleListProps> = ({
       viewport.removeEventListener('scroll', handleScroll);
     };
   }, [feedId, onScrollPositionChange, getViewport]);
+
+  React.useEffect(() => {
+    const viewport = getViewport();
+    if (!viewport) return;
+    if (prevPageRef.current === currentPage) return;
+
+    viewport.scrollTo({ top: 0, behavior: 'smooth' });
+    prevPageRef.current = currentPage;
+  }, [currentPage, getViewport]);
+
+  React.useEffect(() => {
+    const viewport = getViewport();
+    if (!viewport) return;
+
+    const nextFilterKey = `${activeFilters.join('|')}::${activeTagFilters.join('|')}`;
+    const searchChanged = prevSearchRef.current !== searchQuery;
+    const filterChanged = prevFilterKeyRef.current !== nextFilterKey;
+    if (!searchChanged && !filterChanged) return;
+
+    viewport.scrollTo({ top: 0, behavior: 'smooth' });
+    prevSearchRef.current = searchQuery;
+    prevFilterKeyRef.current = nextFilterKey;
+  }, [activeFilters, activeTagFilters, getViewport, searchQuery]);
+
+  React.useEffect(() => {
+    const viewport = getViewport();
+    if (!viewport) return;
+
+    const nextSelectedDateTs = selectedDate ? selectedDate.getTime() : null;
+    if (prevSelectedDateRef.current === nextSelectedDateTs) return;
+
+    viewport.scrollTo({ top: 0, behavior: 'smooth' });
+    prevSelectedDateRef.current = nextSelectedDateTs;
+  }, [getViewport, selectedDate]);
+
+  const hasSearchOrFilter = searchQuery.trim().length > 0 || activeFilters.length > 0 || activeTagFilters.length > 0 || Boolean(selectedDate);
 
   const handleTouchStart = (e: React.TouchEvent) => {
     if (articleListRef.current?.scrollTop === 0) {
@@ -271,23 +313,44 @@ const ArticleListComponent: React.FC<ArticleListProps> = ({
             )}
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 max-w-7xl mx-auto">
-            {paginatedArticlesWithCategory.map(article => (
-              <ArticleCard
-                key={article.guid || article.link}
-                article={article}
-                isSelected={false}
-                isRead={readArticleIds.has(article.guid || article.link)}
-                onClick={() => handleArticleSelect(article)}
-                onCategoryClick={onCategorySelect}
-                onTagClick={onTagSelect}
-                activeCategoryFilters={activeFilters}
-                activeTagFilters={activeTagFilters}
-                nowTs={nowTs}
-                searchQuery={searchQuery}
-              />
-            ))}
-          </div>
+          {filteredArticlesCount === 0 ? (
+            <div className="max-w-3xl mx-auto rounded-2xl border bg-background/90 p-8 text-center space-y-3">
+              <p className="text-sm font-black uppercase tracking-wider">没有匹配的内容</p>
+              <p className="text-xs text-muted-foreground">
+                {hasSearchOrFilter ? '当前搜索词或筛选条件（含日期）没有命中结果，试试清空后再看。' : '当前源暂无可展示的内容。'}
+              </p>
+              {hasSearchOrFilter && (
+                <div className="flex items-center justify-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={onResetFilters}
+                    className="h-8 text-xs font-bold"
+                  >
+                    清空筛选条件
+                  </Button>
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 max-w-7xl mx-auto">
+              {paginatedArticlesWithCategory.map(article => (
+                <ArticleCard
+                  key={article.guid || article.link}
+                  article={article}
+                  isSelected={false}
+                  isRead={readArticleIds.has(article.guid || article.link)}
+                  onClick={() => handleArticleSelect(article)}
+                  onCategoryClick={onCategorySelect}
+                  onTagClick={onTagSelect}
+                  activeCategoryFilters={activeFilters}
+                  activeTagFilters={activeTagFilters}
+                  nowTs={nowTs}
+                  searchQuery={searchQuery}
+                />
+              ))}
+            </div>
+          )}
 
           {/* Pagination */}
           {totalPages > 1 && (

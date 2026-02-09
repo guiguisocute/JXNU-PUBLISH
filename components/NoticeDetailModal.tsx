@@ -43,13 +43,21 @@ export const NoticeDetailModal: React.FC<NoticeDetailModalProps> = ({
   const { toast } = useToast();
   const [badgeSrc, setBadgeSrc] = React.useState(jxnuLogo);
   const [nowTs, setNowTs] = React.useState(() => Date.now());
+  const openedAtRef = React.useRef(0);
 
   React.useEffect(() => {
     if (!article) return;
+    openedAtRef.current = Date.now();
     setNowTs(Date.now());
     const timer = window.setInterval(() => setNowTs(Date.now()), 1000);
     return () => window.clearInterval(timer);
   }, [article]);
+
+  const handleOverlayClick = React.useCallback((event: React.MouseEvent<HTMLDivElement>) => {
+    if (event.target !== event.currentTarget) return;
+    if (Date.now() - openedAtRef.current < 250) return;
+    onClose();
+  }, [onClose]);
 
   const formatEndTime = React.useCallback((value?: string) => {
     if (!value) return '';
@@ -200,7 +208,7 @@ export const NoticeDetailModal: React.FC<NoticeDetailModalProps> = ({
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm p-4 md:p-8"
-          onClick={onClose}
+          onClick={handleOverlayClick}
         >
           <motion.div
             initial={{ opacity: 0, scale: 0.92, y: 20 }}

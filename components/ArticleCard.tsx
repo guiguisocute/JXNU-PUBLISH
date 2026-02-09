@@ -71,6 +71,13 @@ export const ArticleCard: React.FC<ArticleCardProps> = React.memo(({
     onClick();
   }, [onClick]);
 
+  const handleKeyDown = useCallback((event: React.KeyboardEvent<HTMLDivElement>) => {
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      onClick();
+    }
+  }, [onClick]);
+
   const noticeTags = useMemo(() => {
     if (!Array.isArray(article.tags)) return [];
     return article.tags
@@ -142,17 +149,20 @@ export const ArticleCard: React.FC<ArticleCardProps> = React.memo(({
       transition={{ duration: 0.2 }}
       className="h-full"
     >
-      <Card
-        asChild
-        className={cn(
-          "flex flex-col h-full min-h-[430px] overflow-hidden group transition-all duration-300 hover:shadow-md text-left w-full p-0",
-          isSelected ? "ring-2 ring-primary border-primary" : "hover:border-primary/50"
+        <Card
+          asChild
+          className={cn(
+          "flex flex-col h-full min-h-[430px] overflow-hidden group transition-all duration-300 md:hover:shadow-md text-left w-full p-0",
+          isSelected ? "ring-2 ring-primary border-primary" : "md:hover:border-primary/50"
         )}
       >
-        <button
+        <div
+          role="button"
+          tabIndex={0}
           onClick={handleClick}
+          onKeyDown={handleKeyDown}
           aria-label={`阅读文章: ${article.title}`}
-          className="relative flex flex-col h-full w-full cursor-pointer"
+          className="relative flex flex-col h-full w-full cursor-pointer touch-manipulation"
         >
           <div className="relative aspect-video overflow-hidden w-full bg-muted/40">
             {hasValidThumbnail ? (
@@ -160,7 +170,7 @@ export const ArticleCard: React.FC<ArticleCardProps> = React.memo(({
                 src={getMediaUrl(article.thumbnail)}
                 alt=""
                 loading="lazy"
-                className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                className="w-full h-full object-cover transition-transform duration-500 md:group-hover:scale-105"
                 onError={() => setImgError(true)}
               />
             ) : (
@@ -169,7 +179,7 @@ export const ArticleCard: React.FC<ArticleCardProps> = React.memo(({
                   src={placeholderCover}
                   alt="默认院徽占位"
                   loading="lazy"
-                  className="w-24 h-24 object-contain opacity-85 transition-transform duration-500 group-hover:scale-110"
+                  className="w-24 h-24 object-contain opacity-85 transition-transform duration-500 md:group-hover:scale-110"
                 />
               </div>
             )}
@@ -229,7 +239,7 @@ export const ArticleCard: React.FC<ArticleCardProps> = React.memo(({
 
         <CardHeader className="p-4 pb-2 space-y-1">
           <h3
-            className="font-bold text-base leading-tight line-clamp-2 group-hover:text-primary transition-colors [&_mark]:rounded-sm [&_mark]:bg-amber-200/80 [&_mark]:text-foreground [&_mark]:px-0.5"
+            className="font-bold text-base leading-tight line-clamp-2 md:group-hover:text-primary transition-colors [&_mark]:rounded-sm [&_mark]:bg-amber-200/80 [&_mark]:text-foreground [&_mark]:px-0.5"
             dangerouslySetInnerHTML={{ __html: titleHtml }}
           />
         </CardHeader>
@@ -277,15 +287,15 @@ export const ArticleCard: React.FC<ArticleCardProps> = React.memo(({
               {timing.state === 'expired' ? (
                 <span className="text-[10px] px-2 py-0.5 rounded border border-zinc-700/60 bg-zinc-800/70 text-zinc-300 font-bold">已过期</span>
               ) : (
-                <div className="flex items-center gap-1 text-primary font-bold text-[10px] uppercase tracking-tight opacity-0 group-hover:opacity-100 transition-all transform translate-x-2 group-hover:translate-x-0">
+                <div className="flex items-center gap-1 text-primary font-bold text-[10px] uppercase tracking-tight opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-all transform translate-x-0 md:translate-x-2 md:group-hover:translate-x-0">
                   <span>阅读全文</span>
                   <ExternalLink className="w-3 h-3" />
                 </div>
               )}
             </>
           )}
-        </CardFooter>
-        </button>
+         </CardFooter>
+         </div>
       </Card>
     </motion.div>
   );

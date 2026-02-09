@@ -723,6 +723,13 @@ const AppShell: React.FC<{
                 setCurrentPage(1);
                 setSearchQuery(value);
               }}
+              onResetFilters={() => {
+                setCurrentPage(1);
+                setSearchQuery('');
+                setActiveFilters([]);
+                setActiveTagFilters([]);
+                setSelectedDate(null);
+              }}
               paginatedArticlesWithCategory={paginatedArticlesWithCategory}
               readArticleIds={readArticleIds}
               handleArticleSelect={handleArticleSelect}

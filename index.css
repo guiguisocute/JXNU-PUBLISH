@@ -82,3 +82,11 @@
   height: auto !important;
   display: block;
 }
+
+@media (hover: none) and (pointer: coarse) {
+  a,
+  button,
+  [role='button'] {
+    -webkit-tap-highlight-color: transparent;
+  }
+}
