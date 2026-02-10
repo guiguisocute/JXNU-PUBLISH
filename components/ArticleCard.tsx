@@ -35,8 +35,12 @@ export const ArticleCard: React.FC<ArticleCardProps> = React.memo(({
 }) => {
   const [imgError, setImgError] = useState(false);
 
-  const hasValidThumbnail = !imgError && article.thumbnail?.original;
-  const placeholderCover = jxnuLogo;
+  const thumbnailUrl = getMediaUrl(article.thumbnail);
+  const isPlaceholderCover = Boolean(article.isPlaceholderCover);
+  const hasValidThumbnail = !imgError && Boolean(article.thumbnail?.original);
+  const compactLogoMode = isPlaceholderCover || /\/img\/schoolicon\//.test(thumbnailUrl) || /\/JXNUlogo\.png$/.test(thumbnailUrl);
+  const showFullCover = hasValidThumbnail && !compactLogoMode;
+  const placeholderCover = thumbnailUrl || jxnuLogo;
 
   const preview = useMemo(() => {
     const previewLength = hasValidThumbnail ? 150 : 700;
@@ -152,7 +156,7 @@ export const ArticleCard: React.FC<ArticleCardProps> = React.memo(({
         <Card
           asChild
           className={cn(
-          "flex flex-col h-full min-h-[430px] overflow-hidden group transition-all duration-300 md:hover:shadow-md text-left w-full p-0",
+          "mobile-card-surface flex flex-col h-full min-h-[365px] overflow-hidden group transition-all duration-300 md:hover:shadow-md text-left w-full p-0",
           isSelected ? "ring-2 ring-primary border-primary" : "md:hover:border-primary/50"
         )}
       >
@@ -164,10 +168,10 @@ export const ArticleCard: React.FC<ArticleCardProps> = React.memo(({
           aria-label={`阅读文章: ${article.title}`}
           className="relative flex flex-col h-full w-full cursor-pointer touch-manipulation"
         >
-          <div className="relative aspect-video overflow-hidden w-full bg-muted/40">
-            {hasValidThumbnail ? (
+          <div className="relative aspect-[20/9] overflow-hidden w-full bg-muted/40">
+            {showFullCover ? (
               <img
-                src={getMediaUrl(article.thumbnail)}
+                src={thumbnailUrl}
                 alt=""
                 loading="lazy"
                 className="w-full h-full object-cover transition-transform duration-500 md:group-hover:scale-105"
@@ -179,7 +183,7 @@ export const ArticleCard: React.FC<ArticleCardProps> = React.memo(({
                   src={placeholderCover}
                   alt="默认院徽占位"
                   loading="lazy"
-                  className="w-24 h-24 object-contain opacity-85 transition-transform duration-500 md:group-hover:scale-110"
+                  className="w-20 h-20 object-contain opacity-85 transition-transform duration-500 md:group-hover:scale-110"
                 />
               </div>
             )}
@@ -239,7 +243,7 @@ export const ArticleCard: React.FC<ArticleCardProps> = React.memo(({
 
         <CardHeader className="p-4 pb-2 space-y-1">
           <h3
-            className="font-bold text-base leading-tight line-clamp-2 md:group-hover:text-primary transition-colors [&_mark]:rounded-sm [&_mark]:bg-amber-200/80 [&_mark]:text-foreground [&_mark]:px-0.5"
+            className="font-bold text-xl leading-tight line-clamp-2 md:group-hover:text-primary transition-colors [&_mark]:rounded-sm [&_mark]:bg-amber-200/80 [&_mark]:text-foreground [&_mark]:px-0.5"
             dangerouslySetInnerHTML={{ __html: titleHtml }}
           />
         </CardHeader>
@@ -247,7 +251,7 @@ export const ArticleCard: React.FC<ArticleCardProps> = React.memo(({
         <CardContent className="p-4 pt-0 flex-1">
           <div
             className={cn(
-              "text-xs text-muted-foreground leading-relaxed [&_a]:text-primary [&_a]:underline [&_strong]:font-semibold [&_mark]:rounded-sm [&_mark]:bg-amber-200/80 [&_mark]:text-foreground [&_mark]:px-0.5",
+              "text-sm text-muted-foreground leading-relaxed [&_a]:text-primary [&_a]:underline [&_strong]:font-semibold [&_mark]:rounded-sm [&_mark]:bg-amber-200/80 [&_mark]:text-foreground [&_mark]:px-0.5",
               hasValidThumbnail ? "line-clamp-3" : "line-clamp-7"
             )}
             dangerouslySetInnerHTML={{ __html: previewHtml }}

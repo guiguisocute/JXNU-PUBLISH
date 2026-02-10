@@ -414,7 +414,7 @@ const ArticleListComponent: React.FC<ArticleListProps> = ({
 
         </div>
 
-        <footer className="px-4 pt-8 pb-[max(12px,env(safe-area-inset-bottom))] text-center text-[11px] leading-5 text-muted-foreground">
+        <footer className="px-4 pt-8 pb-[max(72px,calc(env(safe-area-inset-bottom)+56px))] text-center text-[11px] leading-5 text-muted-foreground">
           <span>© 2026 guiguisocute. All Rights Reserved. Powered by </span>
           <a
             href="https://github.com/guiguisocute/JXNU-PUBLISH"
@@ -461,7 +461,7 @@ const ArticleListComponent: React.FC<ArticleListProps> = ({
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 20 }}
-            className="fixed bottom-6 right-6 z-30"
+            className="fixed right-6 z-30 bottom-[max(1.5rem,calc(env(safe-area-inset-bottom)+0.75rem))]"
           >
             <Button
               size="icon"

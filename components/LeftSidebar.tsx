@@ -121,6 +121,7 @@ export const LeftSidebar: React.FC<LeftSidebarProps> = ({
   generatedAt,
   updatedCount,
 }) => {
+  const scrollAreaHostRef = React.useRef<HTMLDivElement | null>(null);
   const [nowTs, setNowTs] = React.useState(() => Date.now());
 
   React.useEffect(() => {
@@ -174,6 +175,23 @@ export const LeftSidebar: React.FC<LeftSidebarProps> = ({
   const elapsedLabel = React.useMemo(() => {
     return `上次更新：${elapsedSinceGenerated.hours}h${elapsedSinceGenerated.minutes}m${elapsedSinceGenerated.seconds}s 前`;
   }, [elapsedSinceGenerated.hours, elapsedSinceGenerated.minutes, elapsedSinceGenerated.seconds]);
+
+  React.useEffect(() => {
+    const targetId = selectedFeedMeta?.id;
+    if (!targetId) return;
+
+    const host = scrollAreaHostRef.current;
+    if (!host) return;
+
+    const viewport = host.querySelector('[data-radix-scroll-area-viewport]') as HTMLElement | null;
+    if (!viewport) return;
+
+    const escapedId = targetId.replace(/"/g, '\\"');
+    const target = viewport.querySelector(`[data-feed-id="${escapedId}"]`) as HTMLElement | null;
+    if (!target) return;
+
+    target.scrollIntoView({ block: 'center', behavior: 'smooth' });
+  }, [openFolderPath, selectedFeedMeta?.id, sidebarMode]);
 
   const renderSubfolder = (node: CategoryNode) => {
     const totalCount = countAllFeeds(node);
@@ -359,7 +377,8 @@ export const LeftSidebar: React.FC<LeftSidebarProps> = ({
           </div>
         </div>
 
-        <ScrollArea className="flex-1 px-3 py-4">
+        <div ref={scrollAreaHostRef} className="flex-1 min-h-0">
+        <ScrollArea className="h-full px-3 py-4">
           <div className="space-y-1">
             {sidebarMode === 'grid' ? (
               (() => {
@@ -463,6 +482,7 @@ export const LeftSidebar: React.FC<LeftSidebarProps> = ({
             {loading && <div className="flex justify-center p-8"><RefreshCw className="h-6 w-6 text-primary animate-spin" /></div>}
           </div>
         </ScrollArea>
+        </div>
 
         <div className="p-3 border-t bg-muted/20 flex items-center gap-3">
           <Button variant="outline" size="icon" className="h-10 w-10 md:h-9 md:w-9" onClick={() => setDarkMode(!darkMode)} title={darkMode ? "切换到浅色模式" : "切换到深色模式"}>

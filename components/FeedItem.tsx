@@ -31,6 +31,7 @@ export const FeedItem: React.FC<FeedItemProps> = React.memo(({ feedMeta, feedCon
   if (mode === 'grid') {
     return (
       <motion.div 
+        data-feed-id={feedMeta.id}
         className="relative group w-full"
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
@@ -71,6 +72,7 @@ export const FeedItem: React.FC<FeedItemProps> = React.memo(({ feedMeta, feedCon
 
   return (
     <motion.div 
+      data-feed-id={feedMeta.id}
       className={cn("relative group w-full", feedMeta.isSub && "pl-4")}
       initial={{ opacity: 0, x: -10 }}
       animate={{ opacity: 1, x: 0 }}

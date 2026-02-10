@@ -4,16 +4,31 @@ import matter from 'gray-matter';
 import { marked } from 'marked';
 import YAML from 'yaml';
 
+// Disable indented code blocks — the card markdown files use leading spaces
+// for Chinese-style paragraph indentation, not code.  Fenced code blocks
+// (``` … ```) are unaffected because they go through the 'fences' tokenizer.
+marked.use({
+  tokenizer: {
+    code() { return undefined; },
+  },
+});
+
 const ROOT = process.cwd();
 const CONTENT_DIR = path.join(ROOT, 'content');
 const CARD_DIR = path.join(CONTENT_DIR, 'card');
 const CARD_COVERS_DIR = path.join(CARD_DIR, 'covers');
 const CONCLUSION_DIR = path.join(CONTENT_DIR, 'conclusion');
 const CONTENT_IMG_DIR = path.join(CONTENT_DIR, 'img');
+const INIT_SEPT_FILE_DIR = path.join(ROOT, 'init-sept', 'file');
+const INIT_OCT_FILE_DIR = path.join(ROOT, 'init-oct', 'file');
+const INIT_NOV_FILE_DIR = path.join(ROOT, 'init-nov', 'file');
 const PUBLIC_GENERATED_DIR = path.join(ROOT, 'public', 'generated');
 const PUBLIC_DIR = path.join(ROOT, 'public');
 const PUBLIC_IMG_DIR = path.join(PUBLIC_DIR, 'img');
 const PUBLIC_COVERS_DIR = path.join(PUBLIC_DIR, 'covers');
+const PUBLIC_INIT_SEPT_FILE_DIR = path.join(PUBLIC_DIR, 'init-sept', 'file');
+const PUBLIC_INIT_OCT_FILE_DIR = path.join(PUBLIC_DIR, 'init-oct', 'file');
+const PUBLIC_INIT_NOV_FILE_DIR = path.join(PUBLIC_DIR, 'init-nov', 'file');
 const CONFIG_PATH = path.join(ROOT, 'config', 'subscriptions.yaml');
 
 const fail = (message, filePath) => {
@@ -70,6 +85,82 @@ const normalizeAttachments = (attachments, filePath) => {
   });
 };
 
+const inferAttachmentTypeFromUrl = (url) => {
+  const cleanUrl = String(url || '').split('#')[0].split('?')[0];
+  const ext = path.extname(cleanUrl).replace('.', '').toLowerCase();
+  if (!ext) return 'link';
+  if (['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg'].includes(ext)) return 'image';
+  if (['xls', 'xlsx', 'csv'].includes(ext)) return 'xlsx';
+  if (['doc', 'docx'].includes(ext)) return 'docx';
+  if (['pdf'].includes(ext)) return 'pdf';
+  if (['ppt', 'pptx'].includes(ext)) return 'pptx';
+  return ext;
+};
+
+const extractInlineAttachments = (markdown) => {
+  const result = [];
+  const text = String(markdown || '');
+
+  const imgRe = /!\[([^\]]*)\]\(([^)]+)\)/g;
+  let match;
+  while ((match = imgRe.exec(text))) {
+    const alt = String(match[1] || '').trim();
+    const url = String(match[2] || '').trim();
+    if (!url) continue;
+    result.push({
+      name: alt || path.basename(url) || 'image',
+      url,
+      type: 'image',
+    });
+  }
+
+  const linkRe = /(?<!!)\[([^\]]+)\]\(([^)]+)\)/g;
+  while ((match = linkRe.exec(text))) {
+    const name = String(match[1] || '').trim();
+    const url = String(match[2] || '').trim();
+    if (!url) continue;
+    result.push({
+      name: name || path.basename(url) || url,
+      url,
+      type: inferAttachmentTypeFromUrl(url),
+    });
+  }
+
+  const lineAttachments = text
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter((line) => line.startsWith('[分享]') || line.startsWith('[QQ小程序]'))
+    .map((line) => ({
+      name: line,
+      url: '#',
+      type: 'link',
+    }));
+
+  result.push(...lineAttachments);
+
+  const unique = [];
+  const seen = new Set();
+  for (const item of result) {
+    const key = `${item.name}::${item.url}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    unique.push(item);
+  }
+  return unique;
+};
+
+const mergeAttachments = (base, extra) => {
+  const merged = [];
+  const seen = new Set();
+  [...base, ...extra].forEach((item) => {
+    const key = `${item.name}::${item.url}`;
+    if (seen.has(key)) return;
+    seen.add(key);
+    merged.push(item);
+  });
+  return merged;
+};
+
 const markdownToPlainText = (markdown) => markdown
   .replace(/```[\s\S]*?```/g, ' ')
   .replace(/`[^`]*`/g, ' ')
@@ -108,7 +199,7 @@ const parseConfig = async () => {
       slug: ensureString(item.slug, `schools[${index}].slug`, CONFIG_PATH),
       name: ensureString(item.name, `schools[${index}].name`, CONFIG_PATH),
       shortName: String(item.short_name || '').trim(),
-      icon: String(item.icon || '').trim(),
+      icon: String(item.icon || '').trim() || '/img/JXNUlogo.png',
       order: Number.isFinite(Number(item.order)) ? Number(item.order) : index,
       subscriptions,
     };
@@ -207,6 +298,9 @@ const loadCards = async ({ schoolMap, subscriptionMap }) => {
     const markdown = parsed.content?.trim() || '';
     const html = marked.parse(markdown);
 
+    const frontmatterAttachments = normalizeAttachments(parsed.data.attachments, filePath);
+    const inlineAttachments = extractInlineAttachments(markdown);
+
     notices.push({
       id,
       schoolSlug,
@@ -226,7 +320,7 @@ const loadCards = async ({ schoolMap, subscriptionMap }) => {
         channel: String(parsed.data.source?.channel || subscription.title || '').trim(),
         sender: String(parsed.data.source?.sender || '').trim(),
       },
-      attachments: normalizeAttachments(parsed.data.attachments, filePath),
+      attachments: mergeAttachments(frontmatterAttachments, inlineAttachments),
       published: toIso(parsed.data.published || new Date().toISOString(), filePath),
       contentMarkdown: markdown,
       contentHtml: html,
@@ -355,6 +449,24 @@ const syncStaticAssets = async () => {
     await fs.cp(CONTENT_IMG_DIR, PUBLIC_IMG_DIR, { recursive: true, force: true });
   } catch {
     // ignore missing image directory
+  }
+
+  try {
+    await fs.cp(INIT_SEPT_FILE_DIR, PUBLIC_INIT_SEPT_FILE_DIR, { recursive: true, force: true });
+  } catch {
+    // ignore missing init-sept file directory
+  }
+
+  try {
+    await fs.cp(INIT_OCT_FILE_DIR, PUBLIC_INIT_OCT_FILE_DIR, { recursive: true, force: true });
+  } catch {
+    // ignore missing init-oct file directory
+  }
+
+  try {
+    await fs.cp(INIT_NOV_FILE_DIR, PUBLIC_INIT_NOV_FILE_DIR, { recursive: true, force: true });
+  } catch {
+    // ignore missing init-nov file directory
   }
 
   const iconSource = path.join(CONTENT_IMG_DIR, 'icon.ico');

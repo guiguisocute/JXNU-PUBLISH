@@ -89,4 +89,15 @@
   [role='button'] {
     -webkit-tap-highlight-color: transparent;
   }
+
+  .mobile-card-surface,
+  .mobile-card-surface * {
+    transition: none !important;
+    animation: none !important;
+  }
+
+  .mobile-card-surface:hover,
+  .mobile-card-surface:active {
+    transform: none !important;
+  }
 }

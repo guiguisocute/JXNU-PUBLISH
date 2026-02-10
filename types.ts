@@ -49,6 +49,7 @@ export interface Article {
   startAt?: string;
   endAt?: string;
   pinned?: boolean;
+  isPlaceholderCover?: boolean;
 }
 
 export interface Feed {

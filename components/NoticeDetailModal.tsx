@@ -31,7 +31,7 @@ interface NoticeDetailModalProps {
   shareUrl: string;
 }
 
-export const NoticeDetailModal: React.FC<NoticeDetailModalProps> = ({
+export const NoticeDetailModal: React.FC<NoticeDetailModalProps> = React.memo(({
   article,
   onClose,
   onPrev,
@@ -44,20 +44,92 @@ export const NoticeDetailModal: React.FC<NoticeDetailModalProps> = ({
   const [badgeSrc, setBadgeSrc] = React.useState(jxnuLogo);
   const [nowTs, setNowTs] = React.useState(() => Date.now());
   const openedAtRef = React.useRef(0);
+  const modalBodyRef = React.useRef<HTMLDivElement | null>(null);
+  const isTextSelectingRef = React.useRef(false);
+  const selectionLockUntilRef = React.useRef(0);
+  const isCoarsePointer = React.useMemo(() => {
+    if (typeof window === 'undefined' || !window.matchMedia) return false;
+    return window.matchMedia('(hover: none) and (pointer: coarse)').matches;
+  }, []);
+
+  // Store latest callback props in refs so the keydown effect doesn't
+  // need to re-register every time the parent re-renders (which happens
+  // every second due to the global nowTs timer).  Re-running the effect
+  // would toggle document.body.style.overflow and cause a page reflow
+  // that clears any active text selection.
+  const onCloseRef = React.useRef(onClose);
+  const onPrevRef = React.useRef(onPrev);
+  const onNextRef = React.useRef(onNext);
+  const canPrevRef = React.useRef(canPrev);
+  const canNextRef = React.useRef(canNext);
+  React.useEffect(() => {
+    onCloseRef.current = onClose;
+    onPrevRef.current = onPrev;
+    onNextRef.current = onNext;
+    canPrevRef.current = canPrev;
+    canNextRef.current = canNext;
+  });
 
   React.useEffect(() => {
     if (!article) return;
     openedAtRef.current = Date.now();
     setNowTs(Date.now());
-    const timer = window.setInterval(() => setNowTs(Date.now()), 1000);
+
+    const end = article.endAt ? new Date(article.endAt).getTime() : Number.NaN;
+    const needsLiveTimer = Number.isFinite(end) && Date.now() < end;
+    if (!needsLiveTimer) return;
+    if (isCoarsePointer) return;
+
+    const timer = window.setInterval(() => {
+      if (isTextSelectingRef.current) return;
+      if (Date.now() < selectionLockUntilRef.current) return;
+      setNowTs(Date.now());
+    }, 1000);
     return () => window.clearInterval(timer);
+  }, [article, isCoarsePointer]);
+
+  React.useEffect(() => {
+    if (!article) return;
+
+    const handleSelectionChange = () => {
+      const selection = window.getSelection();
+      if (!selection || selection.rangeCount === 0 || selection.isCollapsed) {
+        if (Date.now() > selectionLockUntilRef.current) {
+          isTextSelectingRef.current = false;
+        }
+        return;
+      }
+
+      const anchor = selection.anchorNode;
+      const focus = selection.focusNode;
+      const host = modalBodyRef.current;
+      if (!host || !anchor || !focus) {
+        if (Date.now() > selectionLockUntilRef.current) {
+          isTextSelectingRef.current = false;
+        }
+        return;
+      }
+
+      const inModal = host.contains(anchor) || host.contains(focus);
+      isTextSelectingRef.current = inModal;
+      if (inModal) {
+        selectionLockUntilRef.current = Date.now() + 12000;
+      }
+    };
+
+    document.addEventListener('selectionchange', handleSelectionChange);
+    return () => {
+      document.removeEventListener('selectionchange', handleSelectionChange);
+      isTextSelectingRef.current = false;
+      selectionLockUntilRef.current = 0;
+    };
   }, [article]);
 
   const handleOverlayClick = React.useCallback((event: React.MouseEvent<HTMLDivElement>) => {
     if (event.target !== event.currentTarget) return;
     if (Date.now() - openedAtRef.current < 250) return;
-    onClose();
-  }, [onClose]);
+    onCloseRef.current();
+  }, []);
 
   const formatEndTime = React.useCallback((value?: string) => {
     if (!value) return '';
@@ -124,9 +196,9 @@ export const NoticeDetailModal: React.FC<NoticeDetailModalProps> = ({
     if (!article) return undefined;
 
     const handleKeydown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') onClose();
-      if (event.key === 'ArrowLeft' && canPrev) onPrev();
-      if (event.key === 'ArrowRight' && canNext) onNext();
+      if (event.key === 'Escape') onCloseRef.current();
+      if (event.key === 'ArrowLeft' && canPrevRef.current) onPrevRef.current();
+      if (event.key === 'ArrowRight' && canNextRef.current) onNextRef.current();
     };
 
     const previousOverflow = document.body.style.overflow;
@@ -137,7 +209,7 @@ export const NoticeDetailModal: React.FC<NoticeDetailModalProps> = ({
       document.body.style.overflow = previousOverflow;
       window.removeEventListener('keydown', handleKeydown);
     };
-  }, [article, canNext, canPrev, onClose, onNext, onPrev]);
+  }, [article]);
 
   const handleShare = async () => {
     if (!article) return;
@@ -207,7 +279,7 @@ export const NoticeDetailModal: React.FC<NoticeDetailModalProps> = ({
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm p-4 md:p-8"
+          className="fixed inset-0 z-50 bg-black/60 md:backdrop-blur-sm p-4 md:p-8"
           onClick={handleOverlayClick}
         >
           <motion.div
@@ -246,7 +318,16 @@ export const NoticeDetailModal: React.FC<NoticeDetailModalProps> = ({
             </header>
 
             <ScrollArea className="flex-1">
-              <div className="mx-auto w-full max-w-3xl min-w-0 p-5 md:p-8">
+              <div
+                ref={modalBodyRef}
+                onTouchStart={() => {
+                  selectionLockUntilRef.current = Date.now() + 12000;
+                }}
+                onMouseDown={() => {
+                  selectionLockUntilRef.current = Date.now() + 8000;
+                }}
+                className="mx-auto w-full max-w-3xl min-w-0 max-w-full overflow-x-auto p-5 md:p-8"
+              >
                 <div className="flex flex-wrap gap-2 mb-4">
                   {timing.state === 'active' && (
                     <div className="w-full mb-2 space-y-1.5">
@@ -291,27 +372,48 @@ export const NoticeDetailModal: React.FC<NoticeDetailModalProps> = ({
                 />
 
                 {article.attachments && article.attachments.length > 0 && (
-                  <section className="mb-6 rounded-xl border bg-muted/20 p-4">
+                  <section className="mb-6 rounded-xl border bg-muted/20 p-4 overflow-x-auto">
                     <h3 className="mb-3 text-xs font-black uppercase tracking-widest text-muted-foreground">附件下载</h3>
                     <div className="space-y-2">
                       {article.attachments.map((attachment) => {
                         const Icon = iconForAttachment(attachment.type, attachment.name);
+                        const hasLink = Boolean(attachment.url && attachment.url !== '#');
+                        if (!hasLink) {
+                          return (
+                            <div
+                              key={`${attachment.url}-${attachment.name}`}
+                              className="flex min-w-0 items-center justify-between gap-2 rounded-lg border bg-background px-3 py-2 text-sm"
+                            >
+                              <div className="min-w-0 flex flex-1 items-center gap-2">
+                                <Icon className="h-4 w-4 text-primary shrink-0" />
+                                <div className="min-w-0">
+                                  <p className="font-medium break-all leading-snug">{attachment.name}</p>
+                                  <p className="text-xs text-muted-foreground">{attachment.type || 'file'}</p>
+                                </div>
+                              </div>
+                              <span className="inline-flex shrink-0 items-center gap-1 text-primary text-xs font-bold">
+                                已记录 <Download className="h-3.5 w-3.5" />
+                              </span>
+                            </div>
+                          );
+                        }
+
                         return (
                           <a
                             key={`${attachment.url}-${attachment.name}`}
                             href={attachment.url}
                             target="_blank"
                             rel="noreferrer"
-                            className="flex items-center justify-between rounded-lg border bg-background px-3 py-2 text-sm hover:border-primary/50"
+                            className="flex min-w-0 items-center justify-between gap-2 rounded-lg border bg-background px-3 py-2 text-sm hover:border-primary/50"
                           >
-                            <div className="min-w-0 flex items-center gap-2">
+                            <div className="min-w-0 flex flex-1 items-center gap-2">
                               <Icon className="h-4 w-4 text-primary shrink-0" />
                               <div className="min-w-0">
-                                <p className="truncate font-medium">{attachment.name}</p>
+                                <p className="font-medium break-all leading-snug">{attachment.name}</p>
                                 <p className="text-xs text-muted-foreground">{attachment.type || 'file'}</p>
                               </div>
                             </div>
-                            <span className="inline-flex items-center gap-1 text-primary text-xs font-bold">
+                            <span className="inline-flex shrink-0 items-center gap-1 text-primary text-xs font-bold">
                               下载 <Download className="h-3.5 w-3.5" />
                             </span>
                           </a>
@@ -380,4 +482,6 @@ export const NoticeDetailModal: React.FC<NoticeDetailModalProps> = ({
       )}
     </AnimatePresence>
   );
-};
+});
+
+NoticeDetailModal.displayName = 'NoticeDetailModal';

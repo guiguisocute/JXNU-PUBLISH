@@ -30,7 +30,7 @@ schools:
     name: 公费师范生学院
     short_name: 公院
     order: 20
-    icon: /img/schoolicon/public-funded-normal.jpg
+    icon: /img/schoolicon/public-funded-normal.png
     subscriptions:
       - title: 待接入
         url: ""
@@ -41,7 +41,7 @@ schools:
     name: 体育学院
     short_name: 体院
     order: 30
-    icon: /img/schoolicon/pe.jpg
+    icon: /img/schoolicon/pe.png
     subscriptions:
       - title: 待接入
         url: ""
@@ -52,7 +52,7 @@ schools:
     name: 化学与材料学院
     short_name: 化材院
     order: 40
-    icon: /img/schoolicon/chem-materials.jpg
+    icon: /img/schoolicon/chem-materials.png
     subscriptions:
       - title: 待接入
         url: ""
@@ -74,7 +74,7 @@ schools:
     name: 历史文化与旅游学院
     short_name: 史旅院
     order: 60
-    icon: /img/schoolicon/history-tourism.jpg
+    icon: /img/schoolicon/history-tourism.png
     subscriptions:
       - title: 待接入
         url: ""
@@ -85,7 +85,7 @@ schools:
     name: 地理与环境学院
     short_name: 地环院
     order: 70
-    icon: /img/schoolicon/geography-environment.jpg
+    icon: /img/schoolicon/geography-environment.png
     subscriptions:
       - title: 待接入
         url: ""
@@ -96,7 +96,7 @@ schools:
     name: 城市建设学院
     short_name: 城建院
     order: 80
-    icon: /img/schoolicon/urban-construction.jpg
+    icon: /img/schoolicon/urban-construction.png
     subscriptions:
       - title: 待接入
         url: ""
@@ -107,7 +107,7 @@ schools:
     name: 外国语学院
     short_name: 外院
     order: 90
-    icon: /img/schoolicon/foreign.jpg
+    icon: /img/schoolicon/foreign.png
     subscriptions:
       - title: 待接入
         url: ""
@@ -118,7 +118,7 @@ schools:
     name: 心理学院
     short_name: 心院
     order: 100
-    icon: /img/schoolicon/psychology.jpg
+    icon: /img/schoolicon/psychology.png
     subscriptions:
       - title: 待接入
         url: ""
@@ -129,7 +129,7 @@ schools:
     name: 政法学院
     short_name: 政法院
     order: 110
-    icon: /img/schoolicon/law.jpg
+    icon: /img/schoolicon/law.png
     subscriptions:
       - title: 待接入
         url: ""
@@ -140,7 +140,7 @@ schools:
     name: 教育学院
     short_name: 教院
     order: 120
-    icon: /img/schoolicon/education.jpg
+    icon: /img/schoolicon/education.png
     subscriptions:
       - title: 待接入
         url: ""
@@ -151,7 +151,7 @@ schools:
     name: 数学与统计学院
     short_name: 数统院
     order: 130
-    icon: /img/schoolicon/math-stat.jpg
+    icon: /img/schoolicon/math-stat.png
     subscriptions:
       - title: 待接入
         url: ""
@@ -162,7 +162,7 @@ schools:
     name: 文学院
     short_name: 文院
     order: 140
-    icon: /img/schoolicon/literature.jpg
+    icon: /img/schoolicon/literature.png
     subscriptions:
       - title: 待接入
         url: ""
@@ -173,7 +173,7 @@ schools:
     name: 新闻与传播学院
     short_name: 新传院
     order: 150
-    icon: /img/schoolicon/journalism.jpg
+    icon: /img/schoolicon/journalism.png
     subscriptions:
       - title: 待接入
         url: ""
@@ -184,7 +184,7 @@ schools:
     name: 物理与通信电子学院
     short_name: 理电院
     order: 160
-    icon: /img/schoolicon/physics-electronics.jpg
+    icon: /img/schoolicon/physics-electronics.png
     subscriptions:
       - title: 待接入
         url: ""
@@ -195,7 +195,7 @@ schools:
     name: 生命科学学院
     short_name: 生科院
     order: 170
-    icon: /img/schoolicon/life-science.jpg
+    icon: /img/schoolicon/life-science.png
     subscriptions:
       - title: 待接入
         url: ""
@@ -228,7 +228,7 @@ schools:
     name: 药学院
     short_name: 药院
     order: 200
-    icon: /img/schoolicon/pharmacy.jpg
+    icon: /img/schoolicon/pharmacy.png
     subscriptions:
       - title: 待接入
         url: ""
@@ -239,7 +239,7 @@ schools:
     name: 马克思主义学院
     short_name: 马院
     order: 210
-    icon: /img/schoolicon/marxism.jpg
+    icon: /img/schoolicon/marxism.png
     subscriptions:
       - title: 待接入
         url: ""
@@ -250,7 +250,7 @@ schools:
     name: 未知学院
     short_name: 未知
     order: 999
-    icon: /JXNUlogo.png
+    icon: ""
     subscriptions:
       - title: 未知来源
         url: ""

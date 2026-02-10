@@ -218,13 +218,13 @@ const DailySummaryPanel: React.FC<{
 });
 DailySummaryPanel.displayName = 'DailySummaryPanel';
 
-const toArticle = (notice: NoticeItem): Article => ({
+const toArticle = (notice: NoticeItem, fallbackCover = ''): Article => ({
   title: notice.title,
   pubDate: notice.published,
   link: notice.extraUrl || '',
   guid: notice.id,
   author: notice.source?.sender || notice.schoolName,
-  thumbnail: createMediaUrl(notice.cover || ''),
+  thumbnail: createMediaUrl(notice.cover || fallbackCover || ''),
   description: notice.description,
   content: notice.contentHtml,
   enclosure: { link: '', type: '' },
@@ -236,6 +236,7 @@ const toArticle = (notice: NoticeItem): Article => ({
   badge: notice.badge,
   startAt: notice.startAt,
   endAt: notice.endAt,
+  isPlaceholderCover: !notice.cover,
 });
 
 const getTimeWindowState = (startAt?: string, endAt?: string, now = Date.now()): {
@@ -314,7 +315,7 @@ const AppShell: React.FC<{
   const [activeFilters, setActiveFilters] = React.useState<string[]>([]);
   const [activeTagFilters, setActiveTagFilters] = React.useState<string[]>([]);
   const [timedOnly, setTimedOnly] = React.useState(false);
-  const [hideExpired, setHideExpired] = React.useState(true);
+  const [hideExpired, setHideExpired] = React.useState(false);
   const [currentPage, setCurrentPage] = React.useState(1);
   const [activeArticle, setActiveArticle] = React.useState<Article | null>(null);
   const [searchQuery, setSearchQuery] = React.useState('');
@@ -348,14 +349,18 @@ const AppShell: React.FC<{
   }, [readArticleIds]);
 
   React.useEffect(() => {
+    if (activeArticle) return;  // modal 打开时暂停全局 timer，防止重渲染清除文字选区
     const timer = window.setInterval(() => setNowTs(Date.now()), 1000);
     return () => window.clearInterval(timer);
-  }, []);
+  }, [activeArticle]);
 
   const schoolFeedEntries = React.useMemo(() => {
     const map = new Map<string, { meta: FeedMeta; feed: Feed }>();
     const subscriptionMap = new Map<string, CompiledContent['subscriptions'][number]>(
       contentData.subscriptions.map((item) => [item.id, item])
+    );
+    const schoolIconBySlug = new Map<string, string>(
+      contentData.schools.map((school) => [school.slug, school.icon || '/img/JXNUlogo.png'])
     );
 
     for (const school of contentData.schools) {
@@ -409,11 +414,13 @@ const AppShell: React.FC<{
         continue;
       }
 
+      const fallbackCover = schoolIconBySlug.get(notice.schoolSlug) || '/img/JXNUlogo.png';
+
       const feedId = notice.subscriptionId;
       const overviewId = `school-${notice.schoolSlug}-all`;
 
-      map.get(overviewId)?.feed.items.push(toArticle(notice));
-      map.get(feedId)!.feed.items.push(toArticle(notice));
+      map.get(overviewId)?.feed.items.push(toArticle(notice, fallbackCover));
+      map.get(feedId)!.feed.items.push(toArticle(notice, fallbackCover));
     }
 
     const allFeeds = Array.from(map.values());
@@ -622,6 +629,11 @@ const AppShell: React.FC<{
     syncHash(nextArticle.guid);
   }, [activeIndex, filteredArticles, syncHash]);
 
+  const handleModalClose = React.useCallback(() => {
+    setActiveArticle(null);
+    syncHash(null);
+  }, [syncHash]);
+
   React.useEffect(() => {
     if (!selectedFeed) return;
     const hash = typeof window !== 'undefined' ? decodeURIComponent(window.location.hash.replace(/^#/, '')) : '';
@@ -641,7 +653,7 @@ const AppShell: React.FC<{
   if (!selectedFeedMeta || !selectedFeed) return <Navigate to="/" replace />;
 
   return (
-    <div className="flex h-screen bg-background font-sans text-foreground overflow-hidden relative transition-colors duration-300">
+    <div className="flex h-[100dvh] bg-background font-sans text-foreground overflow-hidden relative transition-colors duration-300">
       <LeftSidebar
         isSidebarOpen={isSidebarOpen}
         setIsSidebarOpen={setIsSidebarOpen}
@@ -890,10 +902,7 @@ const AppShell: React.FC<{
 
       <NoticeDetailModal
         article={activeArticle}
-        onClose={() => {
-          setActiveArticle(null);
-          syncHash(null);
-        }}
+        onClose={handleModalClose}
         onPrev={handlePrev}
         onNext={handleNext}
         canPrev={activeIndex > 0}
