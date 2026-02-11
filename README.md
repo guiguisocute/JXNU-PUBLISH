@@ -1,35 +1,72 @@
 # JXNU PUBLISH
 
-JXNU PUBLISH 是一个基于 React + Vite 的静态通知聚合站，面向江西师范大学多学院场景。
+JXNU PUBLISH 是一个面向江西师范大学多学院的信息聚合项目：
 
-项目采用 **Markdown 内容源 + 编译产物** 模式：
+- 把各学院通知群消息整合为统一的 24x7 消息源
+- 用结构化 Markdown 作为内容中台，静态编译后对外发布
+- 同时支持网页浏览与 RSS 订阅，尽量打破学院之间的信息差
 
-- 在 `content/card` 维护通知卡片
-- 在 `content/conclusion` 维护学院总结与按日总结
-- 通过 `config/subscriptions.yaml` 严格定义订阅结构
-- 通过脚本编译为前端可直接加载的 `public/generated/*.json`
-- 前端按学院、日期、标签和时效状态进行浏览与筛选
+这个项目的核心不是“做一个网页”，而是搭建一条可持续运行的消息生产链路：
+
+- QQ 学院群消息转发到 Telegram
+- OpenClaw 智能体按 Skills 提取/清洗并写入 Markdown
+- GitHub Actions 自动编译并部署，前端只消费生成产物
+
+---
+
+## 消息汇聚流程（Mermaid）
+
+```mermaid
+flowchart LR
+  A[各学院 QQ 通知群] --> B[AstrBot 脚本]
+  B --> C[NapCat 协议 + QQ 小号机器人]
+  C --> D[Telegram 汇聚频道]
+  D --> E[OpenClaw 智能体]
+  E --> F[按 Skills 生成/更新 Markdown]
+  F --> G[GitHub 仓库 content/*]
+  G --> H[GitHub Actions]
+  H --> I[build:content / build:images / build:rss]
+  I --> J[Vercel 静态站]
+  I --> K[RSS 输出: /rss.xml + /rss/<school>.xml]
+```
+
+---
+
+## 后端更新方案（GitHub Actions）
+
+内容更新采用你之前讨论的 GitHub Actions 自动化方案，核心思路是“定时拉取 + 结构化写入 + 自动构建发布”：
+
+- 触发方式：定时（建议每 5~15 分钟）+ 手动 `workflow_dispatch`
+- 数据输入：Telegram 汇聚源（由 AstrBot + NapCat + QQ 机器人持续转发）
+- 智能处理：OpenClaw 按既定 Skills 解析消息、映射学院、补全 frontmatter、写入 `content/card/**/*.md`
+- 仓库动作：自动提交内容变更（仅内容目录）
+- 发布动作：执行 `pnpm run build`，生成静态站与 RSS 后部署
+
+建议分成两个工作流：
+
+1. `sync-content.yml`：拉消息 -> 调用智能体 -> 更新 Markdown -> 提交
+2. `deploy.yml`：构建并部署（Vercel）
 
 ---
 
 ## 功能特性
 
-- 学院维度通知聚合（含学院汇总流与频道流）
-- 右侧日历筛选、标签统计、时效过滤（仅限时/隐藏过期）
-- 通知详情弹层（支持前后切换、分享链接、附件展示）
-- 预编译搜索索引（标题 + 描述 + 正文纯文本）
-- Markdown 内容编译与严格字段校验（frontmatter）
+- 学院维度聚合（学院汇总流 + 订阅源流）
+- 标签、日期、时效（限时/过期）筛选
+- 详情弹层阅读与附件优先展示
+- 全站 + 分学院 RSS 订阅
+- 搜索索引预编译（标题 + 描述 + 正文纯文本）
+- Markdown 内容编译与 frontmatter 严格校验
 
 ---
 
 ## 技术栈
 
 - React 19 + TypeScript
-- Vite 6
-- Tailwind CSS
-- Radix UI
-- Framer Motion
+- Vite 6 + Tailwind CSS
+- Radix UI + Framer Motion
 - gray-matter + marked（内容编译）
+- GitHub Actions（自动更新/构建）
 
 ---
 
