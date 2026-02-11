@@ -8,8 +8,9 @@
     "generate:sample": "node scripts/generate-sample-content.mjs",
     "stage:attachments": "node scripts/stage-attachments.mjs",
     "build:content": "node scripts/compile-content.mjs",
+    "build:rss": "node scripts/generate-rss.mjs",
     "validate:content": "node scripts/compile-content.mjs --validate-only",
-    "prebuild": "pnpm run build:content",
+    "prebuild": "pnpm run build:content && pnpm run build:rss",
     "build": "vite build",
     "preview": "vite preview",
     "vercel-build": "vite build"

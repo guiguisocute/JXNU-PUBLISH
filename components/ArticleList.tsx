@@ -415,7 +415,26 @@ const ArticleListComponent: React.FC<ArticleListProps> = ({
         </div>
 
         <footer className="px-4 pt-8 pb-[max(72px,calc(env(safe-area-inset-bottom)+56px))] text-center text-[11px] leading-5 text-muted-foreground">
-          <span>© 2026 guiguisocute. All Rights Reserved. Powered by </span>
+          <span>© 2026 </span>
+          <a
+            href="https://blog.guiguisocute.cloud/"
+            target="_blank"
+            rel="noreferrer"
+            className="font-semibold text-primary underline-offset-2 hover:underline"
+          >
+            guiguisocute
+          </a>
+          <span>. All Rights Reserved. </span>
+          <a
+            href="/rss.xml"
+            target="_blank"
+            rel="noreferrer"
+            className="font-semibold text-primary underline-offset-2 hover:underline"
+          >
+            RSS
+          </a>
+          <br />
+          <span>Powered by </span>
           <a
             href="https://github.com/guiguisocute/JXNU-PUBLISH"
             target="_blank"
@@ -423,6 +442,15 @@ const ArticleListComponent: React.FC<ArticleListProps> = ({
             className="font-semibold text-primary underline-offset-2 hover:underline"
           >
             JXNU-PUBLISH
+          </a>
+          <span> &amp; </span>
+          <a
+            href="https://openclaw.ai/"
+            target="_blank"
+            rel="noreferrer"
+            className="font-semibold text-primary underline-offset-2 hover:underline"
+          >
+            OpenClaw
           </a>
         </footer>
       </ScrollArea>

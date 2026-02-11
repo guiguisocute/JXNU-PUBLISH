@@ -53,6 +53,12 @@ pnpm run generate:sample
 pnpm run build:content
 ```
 
+### 3.1) 生成 RSS（全站 + 分学院）
+
+```bash
+pnpm run build:rss
+```
+
 ### 4) 启动开发服务器
 
 ```bash
@@ -70,7 +76,18 @@ pnpm run build
 pnpm run preview
 ```
 
-说明：`build` 前会自动执行 `prebuild`，即 `pnpm run build:content`。
+说明：`build` 前会自动执行 `prebuild`（内容编译 + RSS 生成）。
+
+当前 `prebuild` 会自动执行：
+
+- `pnpm run build:content`
+- `pnpm run build:rss`
+
+可选环境变量：
+
+- `SITE_URL`（推荐）或 `RSS_SITE_URL`
+  - 用于生成 RSS 里的绝对链接。
+  - 未设置时默认使用 `https://jxnu-publish.vercel.app`。
 
 ---
 
@@ -157,6 +174,14 @@ attachments: []
 2. 在 Vercel 导入仓库
 3. Build Command 使用默认（`pnpm run build`）
 4. Output Directory 为 `dist`
+
+---
+
+## RSS 订阅地址
+
+- 全站：`/rss.xml`
+- 分学院：`/rss/<school_slug>.xml`
+  - 示例：`/rss/ai.xml`
 
 ---
 

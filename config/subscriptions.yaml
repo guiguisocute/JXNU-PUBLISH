@@ -21,11 +21,6 @@ schools:
         icon: ""
         enabled: true
         order: 30
-      - title: 测试订阅通过程度
-        url: ""
-        icon: ""
-        enabled: true
-        order: 40
   - slug: public-funded-normal
     name: 公费师范生学院
     short_name: 公院
