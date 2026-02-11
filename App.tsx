@@ -354,7 +354,7 @@ const AppShell: React.FC<{
 
   React.useEffect(() => {
     if (activeArticle) return;  // modal 打开时暂停全局 timer，防止重渲染清除文字选区
-    const timer = window.setInterval(() => setNowTs(Date.now()), 1000);
+    const timer = window.setInterval(() => setNowTs(Date.now()), 30000);
     return () => window.clearInterval(timer);
   }, [activeArticle]);
 

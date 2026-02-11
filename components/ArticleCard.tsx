@@ -7,6 +7,7 @@ import { Calendar, ExternalLink, ImageOff } from "lucide-react";
 import { cn } from "@/lib/utils";
 import jxnuLogo from '../content/img/JXNUlogo.png';
 import { renderHighlightedText, renderSimpleMarkdown } from '../lib/simple-markdown';
+import { getResponsiveCoverAttrs } from '../services/responsiveImage';
 
 interface ArticleCardProps {
   article: Article;
@@ -19,6 +20,7 @@ interface ArticleCardProps {
   activeTagFilters?: string[];
   nowTs?: number;
   searchQuery?: string;
+  priorityImage?: boolean;
 }
 
 export const ArticleCard: React.FC<ArticleCardProps> = React.memo(({
@@ -32,6 +34,7 @@ export const ArticleCard: React.FC<ArticleCardProps> = React.memo(({
   activeTagFilters = [],
   nowTs = Date.now(),
   searchQuery = '',
+  priorityImage = false,
 }) => {
   const [imgError, setImgError] = useState(false);
 
@@ -41,6 +44,7 @@ export const ArticleCard: React.FC<ArticleCardProps> = React.memo(({
   const compactLogoMode = isPlaceholderCover || /\/img\/schoolicon\//.test(thumbnailUrl) || /\/JXNUlogo\.png$/.test(thumbnailUrl);
   const showFullCover = hasValidThumbnail && !compactLogoMode;
   const placeholderCover = thumbnailUrl || jxnuLogo;
+  const responsiveCover = useMemo(() => getResponsiveCoverAttrs(thumbnailUrl), [thumbnailUrl]);
 
   const preview = useMemo(() => {
     const previewLength = hasValidThumbnail ? 150 : 700;
@@ -134,11 +138,10 @@ export const ArticleCard: React.FC<ArticleCardProps> = React.memo(({
     const days = Math.floor(totalSeconds / 86400);
     const hours = Math.floor((totalSeconds % 86400) / 3600);
     const minutes = Math.floor((totalSeconds % 3600) / 60);
-    const seconds = totalSeconds % 60;
 
     if (days > 0) return `${days}天${hours}小时`;
     if (hours > 0) return `${hours}小时${minutes}分`;
-    return `${minutes}分${seconds}秒`;
+    return `${Math.max(1, minutes)}分钟`;
   }, [nowTs]);
 
   const timing = useMemo(() => {
@@ -183,13 +186,17 @@ export const ArticleCard: React.FC<ArticleCardProps> = React.memo(({
         >
           <div className="relative aspect-video overflow-hidden w-full bg-muted/40">
             {showFullCover ? (
-              <img
-                src={thumbnailUrl}
-                alt=""
-                loading="lazy"
-                className="w-full h-full object-cover transition-transform duration-500 md:group-hover:scale-105"
-                onError={() => setImgError(true)}
-              />
+                <img
+                  src={thumbnailUrl}
+                  alt=""
+                  loading={priorityImage ? 'eager' : 'lazy'}
+                  fetchPriority={priorityImage ? 'high' : 'auto'}
+                  decoding="async"
+                  srcSet={responsiveCover.srcSet}
+                  sizes={responsiveCover.sizes}
+                  className="w-full h-full object-cover transition-transform duration-500 md:group-hover:scale-105"
+                  onError={() => setImgError(true)}
+                />
             ) : (imgError && Boolean(article.thumbnail?.original)) ? (
               <div className="w-full h-full flex flex-col items-center justify-center gap-2 bg-muted/20 text-muted-foreground">
                 <ImageOff className="w-8 h-8" aria-hidden="true" />
@@ -200,7 +207,8 @@ export const ArticleCard: React.FC<ArticleCardProps> = React.memo(({
                 <img
                   src={placeholderCover}
                   alt="默认院徽占位"
-                  loading="lazy"
+                  loading={priorityImage ? 'eager' : 'lazy'}
+                  fetchPriority={priorityImage ? 'high' : 'auto'}
                   className="w-24 h-24 object-contain opacity-85 transition-transform duration-500 md:group-hover:scale-110"
                 />
               </div>

@@ -334,7 +334,7 @@ const ArticleListComponent: React.FC<ArticleListProps> = ({
             </div>
           ) : (
             <div className="grid grid-flow-row grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 max-w-7xl mx-auto">
-              {paginatedArticlesWithCategory.map(article => (
+              {paginatedArticlesWithCategory.map((article, index) => (
                 <ArticleCard
                   key={article.guid || article.link}
                   article={article}
@@ -347,6 +347,7 @@ const ArticleListComponent: React.FC<ArticleListProps> = ({
                   activeTagFilters={activeTagFilters}
                   nowTs={nowTs}
                   searchQuery={searchQuery}
+                  priorityImage={currentPage === 1 && index < 2}
                 />
               ))}
             </div>

@@ -59,6 +59,12 @@ pnpm run build:content
 pnpm run build:rss
 ```
 
+### 3.2) 生成封面自适应 WebP 版本
+
+```bash
+pnpm run build:images
+```
+
 ### 4) 启动开发服务器
 
 ```bash
@@ -81,6 +87,7 @@ pnpm run preview
 当前 `prebuild` 会自动执行：
 
 - `pnpm run build:content`
+- `pnpm run build:images`
 - `pnpm run build:rss`
 
 可选环境变量：

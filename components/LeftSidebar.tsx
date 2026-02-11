@@ -125,7 +125,7 @@ export const LeftSidebar: React.FC<LeftSidebarProps> = ({
   const [nowTs, setNowTs] = React.useState(() => Date.now());
 
   React.useEffect(() => {
-    const timer = window.setInterval(() => setNowTs(Date.now()), 1000);
+    const timer = window.setInterval(() => setNowTs(Date.now()), 60000);
     return () => window.clearInterval(timer);
   }, []);
 
@@ -135,7 +135,6 @@ export const LeftSidebar: React.FC<LeftSidebarProps> = ({
       return {
         hours: 0,
         minutes: 0,
-        seconds: 0,
       };
     }
 
@@ -143,9 +142,8 @@ export const LeftSidebar: React.FC<LeftSidebarProps> = ({
     const totalSeconds = Math.floor(delta / 1000);
     const hours = Math.floor(totalSeconds / 3600);
     const minutes = Math.floor((totalSeconds % 3600) / 60);
-    const seconds = totalSeconds % 60;
 
-    return { hours, minutes, seconds };
+    return { hours, minutes };
   }, [generatedAt, nowTs]);
 
   const updateHealth = React.useMemo(() => {
@@ -173,8 +171,8 @@ export const LeftSidebar: React.FC<LeftSidebarProps> = ({
   }, [elapsedSinceGenerated.hours]);
 
   const elapsedLabel = React.useMemo(() => {
-    return `上次更新：${elapsedSinceGenerated.hours}h${elapsedSinceGenerated.minutes}m${elapsedSinceGenerated.seconds}s 前`;
-  }, [elapsedSinceGenerated.hours, elapsedSinceGenerated.minutes, elapsedSinceGenerated.seconds]);
+    return `上次更新：${elapsedSinceGenerated.hours}h${elapsedSinceGenerated.minutes}m 前`;
+  }, [elapsedSinceGenerated.hours, elapsedSinceGenerated.minutes]);
 
   React.useEffect(() => {
     const targetId = selectedFeedMeta?.id;

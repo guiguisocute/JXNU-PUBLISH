@@ -50,6 +50,7 @@ export const FeedItem: React.FC<FeedItemProps> = React.memo(({ feedMeta, feedCon
             alt={displayTitle}
             className="w-full h-full object-cover transition-all duration-500 group-hover:scale-110 bg-white dark:bg-muted"
             loading="lazy"
+            decoding="async"
             onError={(e) => { (e.target as HTMLImageElement).src = fallbackAvatar; }}
           />
           <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-80 group-hover:opacity-100 transition-opacity flex flex-col justify-end p-2">
@@ -94,6 +95,7 @@ export const FeedItem: React.FC<FeedItemProps> = React.memo(({ feedMeta, feedCon
             isSelected ? "border-primary-foreground/20" : "border-border"
           )}
           loading="lazy"
+          decoding="async"
           onError={(e) => { (e.target as HTMLImageElement).src = fallbackAvatar; }}
         />
         <div className="flex-1 overflow-hidden">
