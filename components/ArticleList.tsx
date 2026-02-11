@@ -354,8 +354,34 @@ const ArticleListComponent: React.FC<ArticleListProps> = ({
 
           {/* Pagination */}
           {totalPages > 1 && (
-            <div className="py-12 flex flex-col items-center gap-4">
-              <div className="flex items-center gap-2">
+            <div className="py-12 flex w-full flex-col items-center gap-4">
+              <div className="flex w-full items-center justify-between gap-2 md:hidden">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                  disabled={currentPage === 1}
+                  className="rounded-full px-3 font-bold"
+                >
+                  上一页
+                </Button>
+
+                <div className="min-w-0 rounded-full border bg-muted/50 px-3 py-1 text-xs font-bold">
+                  {currentPage} / {totalPages || 1}
+                </div>
+
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+                  disabled={currentPage === totalPages}
+                  className="rounded-full px-3 font-bold"
+                >
+                  下一页
+                </Button>
+              </div>
+
+              <div className="hidden items-center gap-2 md:flex">
                 <Button
                   variant="outline"
                   size="sm"
@@ -365,7 +391,7 @@ const ArticleListComponent: React.FC<ArticleListProps> = ({
                 >
                   上一页
                 </Button>
-                <div className="flex items-center gap-1 bg-muted/50 p-1 rounded-full border">
+                <div className="flex max-w-full items-center gap-1 overflow-x-auto rounded-full border bg-muted/50 p-1">
                   {visiblePageTokens.map(token => {
                     if (typeof token === 'string') return <span key={token} className="w-8 text-center text-muted-foreground">···</span>;
                     return (
@@ -374,7 +400,7 @@ const ArticleListComponent: React.FC<ArticleListProps> = ({
                         variant={currentPage === token ? "default" : "ghost"}
                         size="icon"
                         onClick={() => setCurrentPage(token as number)}
-                        className="h-8 w-8 rounded-full text-xs font-bold"
+                        className="h-8 w-8 shrink-0 rounded-full text-xs font-bold"
                       >
                         {token}
                       </Button>
