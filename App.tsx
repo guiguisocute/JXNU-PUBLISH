@@ -239,6 +239,7 @@ const toArticle = (notice: NoticeItem, fallbackCover = ''): Article => ({
   badge: notice.badge,
   startAt: notice.startAt,
   endAt: notice.endAt,
+  pinned: notice.pinned,
   isPlaceholderCover: !notice.cover,
 });
 
@@ -428,7 +429,7 @@ const AppShell: React.FC<{
 
     const allFeeds = Array.from(map.values());
     allFeeds.forEach(({ feed }) => {
-      feed.items.sort((a, b) => new Date(b.pubDate).getTime() - new Date(a.pubDate).getTime());
+      feed.items.sort((a, b) => { if (a.pinned !== b.pinned) return a.pinned ? -1 : 1; return new Date(b.pubDate).getTime() - new Date(a.pubDate).getTime(); });
     });
 
     return allFeeds;
@@ -559,6 +560,7 @@ const AppShell: React.FC<{
       .filter(matchesActiveCriteria)
       .slice()
       .sort((a, b) => {
+        if (a.pinned !== b.pinned) return a.pinned ? -1 : 1;
         const diff = toTimestamp(b.pubDate) - toTimestamp(a.pubDate);
         if (diff !== 0) return diff;
         return (b.guid || '').localeCompare(a.guid || '', 'zh-CN');

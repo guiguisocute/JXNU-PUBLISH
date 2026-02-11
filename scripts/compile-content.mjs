@@ -59,6 +59,17 @@ const toIso = (value, filePath) => {
   return date.toISOString();
 };
 
+const toBoolean = (value, fallback = false) => {
+  if (typeof value === 'boolean') return value;
+  if (typeof value === 'number') return value !== 0;
+  if (typeof value === 'string') {
+    const normalized = value.trim().toLowerCase();
+    if (normalized === 'true' || normalized === '1' || normalized === 'yes') return true;
+    if (normalized === 'false' || normalized === '0' || normalized === 'no' || normalized === '') return false;
+  }
+  return fallback;
+};
+
 const normalizeAttachmentUrl = (value) => {
   const clean = String(value || '').trim().replace(/\\/g, '/');
   if (!clean) return '';
@@ -339,7 +350,7 @@ const loadCards = async ({ schoolMap, subscriptionMap }) => {
       description: String(parsed.data.description || markdownToPlainText(markdown).slice(0, 180) || '').trim(),
       category: String(parsed.data.category || '未分类'),
       tags: Array.isArray(parsed.data.tags) ? parsed.data.tags.map(String) : [],
-      pinned: Boolean(parsed.data.pinned),
+      pinned: toBoolean(parsed.data.pinned ?? parsed.data.pined, false),
       cover: String(parsed.data.cover || ''),
       badge: String(parsed.data.badge || ''),
       extraUrl: String(parsed.data.extra_url || ''),
