@@ -112,6 +112,19 @@ export const ArticleCard: React.FC<ArticleCardProps> = React.memo(({
     });
   }, []);
 
+  const formatStartTime = useCallback((value?: string) => {
+    if (!value) return '';
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return '';
+    return date.toLocaleString('zh-CN', {
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false,
+    });
+  }, []);
+
   const getCountdownText = useCallback((endAt?: string) => {
     if (!endAt) return '';
     const end = new Date(endAt).getTime();
@@ -293,7 +306,11 @@ export const ArticleCard: React.FC<ArticleCardProps> = React.memo(({
                 <Calendar className="w-3.5 h-3.5 shrink-0" />
                 <time className="leading-none">{formattedDateTime}</time>
               </div>
-              {timing.state === 'expired' ? (
+              {timing.state === 'upcoming' ? (
+                <span className="text-[10px] px-2 py-0.5 rounded border border-sky-300/80 bg-sky-50 text-sky-700 font-bold dark:border-sky-300/60 dark:bg-sky-500/20 dark:text-sky-100">
+                  将于 {formatStartTime(article.startAt)} 开始
+                </span>
+              ) : timing.state === 'expired' ? (
                 <span className="text-[10px] px-2 py-0.5 rounded border border-rose-300/80 bg-rose-50 text-rose-700 font-bold dark:border-rose-300/60 dark:bg-rose-500/20 dark:text-rose-100">已过期</span>
               ) : (
                 <div className="flex items-center gap-1 text-primary font-bold text-[10px] uppercase tracking-tight opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-all transform translate-x-0 md:translate-x-2 md:group-hover:translate-x-0">

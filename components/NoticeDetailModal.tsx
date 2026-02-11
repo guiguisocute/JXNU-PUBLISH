@@ -144,6 +144,19 @@ export const NoticeDetailModal: React.FC<NoticeDetailModalProps> = React.memo(({
     });
   }, []);
 
+  const formatStartTime = React.useCallback((value?: string) => {
+    if (!value) return '';
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return '';
+    return date.toLocaleString('zh-CN', {
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false,
+    });
+  }, []);
+
   const getCountdownText = React.useCallback((endAt?: string) => {
     if (!endAt) return '';
     const end = new Date(endAt).getTime();
@@ -355,6 +368,11 @@ export const NoticeDetailModal: React.FC<NoticeDetailModalProps> = React.memo(({
                   )}
                   {timing.state === 'expired' && (
                     <span className="text-[11px] px-2 py-1 rounded border border-rose-300/80 bg-rose-50 text-rose-700 font-bold dark:border-rose-300/60 dark:bg-rose-500/20 dark:text-rose-100">已过期</span>
+                  )}
+                  {timing.state === 'upcoming' && (
+                    <span className="text-[11px] px-2 py-1 rounded border border-sky-300/80 bg-sky-50 text-sky-700 font-bold dark:border-sky-300/60 dark:bg-sky-500/20 dark:text-sky-100">
+                      将于 {formatStartTime(article.startAt)} 开始
+                    </span>
                   )}
                   {article.aiCategory && (
                     <span className="text-[11px] bg-primary text-primary-foreground px-2 py-1 rounded border border-primary/80 font-semibold">{article.aiCategory}</span>
