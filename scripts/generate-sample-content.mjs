@@ -177,7 +177,7 @@ const makeAiAttachments = (index) => {
   const mode = index % 5;
   if (mode === 0) return ['报名汇总表.docx'];
   if (mode === 1) return [{ name: '活动细则.pdf', url: 'https://example.com/files/ai-rules.pdf' }];
-  if (mode === 2) return [{ name: '名单模板.xlsx', url: './attachments/名单模板.xlsx' }];
+  if (mode === 2) return [{ name: '名单模板.xlsx', url: '/attachments/名单模板.xlsx' }];
   if (mode === 3) return [];
   return [{ name: '流程图.png', url: 'https://picsum.photos/seed/ai-flow/1200/800' }];
 };
@@ -288,7 +288,7 @@ const main = async () => {
       endAt,
     });
 
-    await writeFile(path.join(CARD_DIR, `${id}.md`), `${frontmatter}${body}\n`);
+    await writeFile(path.join(CARD_DIR, aiSchool.slug, `${id}.md`), `${frontmatter}${body}\n`);
   }
 
   for (const school of SCHOOLS.slice(1)) {
@@ -317,7 +317,7 @@ const main = async () => {
 
     const body = '# I WANT YOU';
 
-    await writeFile(path.join(CARD_DIR, `${id}.md`), `${frontmatter}${body}\n`);
+    await writeFile(path.join(CARD_DIR, school.slug, `${id}.md`), `${frontmatter}${body}\n`);
   }
 
   for (const school of SCHOOLS) {

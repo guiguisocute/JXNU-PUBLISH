@@ -48,7 +48,7 @@ export const FeedItem: React.FC<FeedItemProps> = React.memo(({ feedMeta, feedCon
           <img
             src={resolvedAvatar}
             alt={displayTitle}
-            className="w-full h-full object-cover transition-all duration-500 group-hover:scale-110 bg-muted"
+            className="w-full h-full object-cover transition-all duration-500 group-hover:scale-110 bg-white dark:bg-muted"
             loading="lazy"
             onError={(e) => { (e.target as HTMLImageElement).src = fallbackAvatar; }}
           />
@@ -90,7 +90,7 @@ export const FeedItem: React.FC<FeedItemProps> = React.memo(({ feedMeta, feedCon
           src={resolvedAvatar}
           alt=""
           className={cn(
-            "w-8 h-8 rounded-md object-cover shrink-0 border bg-muted",
+            "w-8 h-8 rounded-md object-cover shrink-0 border bg-white dark:bg-muted",
             isSelected ? "border-primary-foreground/20" : "border-border"
           )}
           loading="lazy"

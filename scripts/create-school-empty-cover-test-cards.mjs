@@ -32,7 +32,7 @@ const run = async () => {
     const subId = makeSubscriptionId(schoolSlug, firstSub);
     const subTitle = String(firstSub.title || '').trim() || schoolName;
     const id = `20260210-${schoolSlug}-099`;
-    const filePath = path.join(CARD_DIR, `${id}.md`);
+    const filePath = path.join(CARD_DIR, schoolSlug, `${id}.md`);
 
     const content = [
       '---',
@@ -61,6 +61,7 @@ const run = async () => {
       '',
     ].join('\n');
 
+    await fs.mkdir(path.dirname(filePath), { recursive: true });
     await fs.writeFile(filePath, content, 'utf8');
   }
 

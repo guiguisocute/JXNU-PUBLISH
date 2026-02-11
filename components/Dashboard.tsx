@@ -41,9 +41,9 @@ export const Dashboard: React.FC<DashboardProps> = ({
   const schoolSummaryRows = React.useMemo(
     () => summaryFeeds
       .map(({ meta, feed }) => ({
-        name: meta.customTitle || feed.title,
+        name: meta.category || meta.customTitle || feed.title.replace(/汇总$/, ''),
         count: feed.items.length,
-        fullTitle: feed.title,
+        fullTitle: meta.category || feed.title.replace(/汇总$/, ''),
       }))
       .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name, 'zh-CN')),
     [summaryFeeds]
@@ -62,6 +62,14 @@ export const Dashboard: React.FC<DashboardProps> = ({
       })
       .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name, 'zh-CN')),
     [schoolShortNameMap, sourceFeeds]
+  );
+
+  const activeSourceCount = React.useMemo(
+    () => sourceFeeds.filter(({ meta, feed }) => {
+      const sourceName = meta.sourceChannel || meta.customTitle || feed.title;
+      return !/待接入/.test(sourceName);
+    }).length,
+    [sourceFeeds]
   );
 
   return (
@@ -86,26 +94,26 @@ export const Dashboard: React.FC<DashboardProps> = ({
                 <Newspaper className="w-8 h-8" />
               </div>
               <div>
-                <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">文章总数</p>
+                <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">活动总数</p>
                 <h3 className="text-3xl font-black">{totalArticles}</h3>
               </div>
             </CardContent>
           </Card>
-          <Card className="bg-secondary/5 border-secondary/10">
+          <Card className="bg-primary/5 border-primary/10">
             <CardContent className="p-6 flex items-center gap-6">
-              <div className="bg-secondary text-secondary-foreground p-4 rounded-2xl shadow-lg shadow-secondary/20">
+              <div className="bg-primary text-primary-foreground p-4 rounded-2xl shadow-lg shadow-primary/20">
                 <Rss className="w-8 h-8" />
               </div>
               <div>
                 <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">活跃订阅源</p>
-                <h3 className="text-3xl font-black">{sourceRows.length}</h3>
+                <h3 className="text-3xl font-black">{activeSourceCount}</h3>
               </div>
             </CardContent>
           </Card>
         </div>
 
         <Card className="p-6">
-          <StatsChart title="各学院汇总活跃度" rows={schoolSummaryRows} />
+          <StatsChart title="各学院活跃度" rows={schoolSummaryRows} />
         </Card>
 
         <Card className="p-6">

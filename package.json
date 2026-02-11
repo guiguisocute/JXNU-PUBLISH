@@ -1,11 +1,12 @@
 {
-  "name": "JXNU-PUBLISH",
+  "name": "JXNU PUBLISH",
   "private": true,
   "version": "0.0.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "generate:sample": "node scripts/generate-sample-content.mjs",
+    "stage:attachments": "node scripts/stage-attachments.mjs",
     "build:content": "node scripts/compile-content.mjs",
     "validate:content": "node scripts/compile-content.mjs --validate-only",
     "prebuild": "pnpm run build:content",
@@ -14,6 +15,7 @@
     "vercel-build": "vite build"
   },
   "dependencies": {
+    "@google/generative-ai": "^0.24.1",
     "@radix-ui/react-dialog": "^1.1.15",
     "@radix-ui/react-label": "^2.1.8",
     "@radix-ui/react-scroll-area": "^1.2.10",

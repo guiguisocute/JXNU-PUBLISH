@@ -76,7 +76,7 @@ pnpm run preview
 
 ## 内容目录说明
 
-- `content/card/*.md`：通知卡片正文与 frontmatter
+- `content/card/**/*.md`：通知卡片正文与 frontmatter（建议按学院 slug 分子目录管理）
 - `content/conclusion/*.md`：学院总结与 `daily` 按日总结
 - `config/subscriptions.yaml`：订阅结构与学院映射（唯一配置源）
 - `public/generated/*.json`：前端运行时加载数据

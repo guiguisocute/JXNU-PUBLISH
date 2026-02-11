@@ -19,6 +19,7 @@ const CARD_DIR = path.join(CONTENT_DIR, 'card');
 const CARD_COVERS_DIR = path.join(CARD_DIR, 'covers');
 const CONCLUSION_DIR = path.join(CONTENT_DIR, 'conclusion');
 const CONTENT_IMG_DIR = path.join(CONTENT_DIR, 'img');
+const CONTENT_ATTACHMENTS_DIR = path.join(CONTENT_DIR, 'attachments');
 const INIT_SEPT_FILE_DIR = path.join(ROOT, 'init-sept', 'file');
 const INIT_OCT_FILE_DIR = path.join(ROOT, 'init-oct', 'file');
 const INIT_NOV_FILE_DIR = path.join(ROOT, 'init-nov', 'file');
@@ -26,6 +27,7 @@ const PUBLIC_GENERATED_DIR = path.join(ROOT, 'public', 'generated');
 const PUBLIC_DIR = path.join(ROOT, 'public');
 const PUBLIC_IMG_DIR = path.join(PUBLIC_DIR, 'img');
 const PUBLIC_COVERS_DIR = path.join(PUBLIC_DIR, 'covers');
+const PUBLIC_ATTACHMENTS_DIR = path.join(PUBLIC_DIR, 'attachments');
 const PUBLIC_INIT_SEPT_FILE_DIR = path.join(PUBLIC_DIR, 'init-sept', 'file');
 const PUBLIC_INIT_OCT_FILE_DIR = path.join(PUBLIC_DIR, 'init-oct', 'file');
 const PUBLIC_INIT_NOV_FILE_DIR = path.join(PUBLIC_DIR, 'init-nov', 'file');
@@ -57,6 +59,31 @@ const toIso = (value, filePath) => {
   return date.toISOString();
 };
 
+const normalizeAttachmentUrl = (value) => {
+  const clean = String(value || '').trim().replace(/\\/g, '/');
+  if (!clean) return '';
+  if (clean === '#') return clean;
+  if (/^https?:\/\//i.test(clean)) return clean;
+
+  if (clean.startsWith('/attachments/')) return clean;
+  if (clean.startsWith('./attachments/')) return `/attachments/${clean.slice('./attachments/'.length)}`;
+  if (clean.startsWith('attachments/')) return `/attachments/${clean.slice('attachments/'.length)}`;
+
+  if (
+    clean.startsWith('/init-sept/file/')
+    || clean.startsWith('/init-oct/file/')
+    || clean.startsWith('/init-nov/file/')
+    || clean.startsWith('/init-dec/file/')
+    || clean.startsWith('/init-jan/file/')
+  ) {
+    return clean;
+  }
+
+  if (clean.startsWith('/')) return clean;
+
+  return `/attachments/${clean.replace(/^\.?\/+/, '')}`;
+};
+
 const normalizeAttachments = (attachments, filePath) => {
   if (!attachments) return [];
   if (!Array.isArray(attachments)) fail('attachments must be an array', filePath);
@@ -65,10 +92,11 @@ const normalizeAttachments = (attachments, filePath) => {
     if (typeof item === 'string') {
       const clean = item.trim();
       if (!clean) fail(`Attachment at index ${index} is empty`, filePath);
+      const normalizedUrl = normalizeAttachmentUrl(clean);
       return {
-        name: path.basename(clean),
-        url: clean.startsWith('http') ? clean : `./attachments/${clean}`,
-        type: path.extname(clean).replace('.', '').toLowerCase() || 'file',
+        name: path.basename(normalizedUrl),
+        url: normalizedUrl,
+        type: path.extname(normalizedUrl).replace('.', '').toLowerCase() || 'file',
       };
     }
 
@@ -76,11 +104,12 @@ const normalizeAttachments = (attachments, filePath) => {
     const name = String(item.name || '').trim();
     const url = String(item.url || '').trim();
     if (!name || !url) fail(`Attachment at index ${index} missing name or url`, filePath);
+    const normalizedUrl = normalizeAttachmentUrl(url);
 
     return {
       name,
-      url,
-      type: String(item.type || path.extname(url).replace('.', '').toLowerCase() || 'file'),
+      url: normalizedUrl,
+      type: String(item.type || path.extname(normalizedUrl).replace('.', '').toLowerCase() || 'file'),
     };
   });
 };
@@ -293,7 +322,7 @@ const loadCards = async ({ schoolMap, subscriptionMap }) => {
 
     const parsedStart = parsed.data.start_at ? toIso(parsed.data.start_at, filePath) : '';
     const parsedEnd = parsed.data.end_at ? toIso(parsed.data.end_at, filePath) : '';
-    const hasBothWindow = Boolean(parsedStart && parsedEnd);
+    const publishedIso = toIso(parsed.data.published || new Date().toISOString(), filePath);
 
     const markdown = parsed.content?.trim() || '';
     const html = marked.parse(markdown);
@@ -314,14 +343,14 @@ const loadCards = async ({ schoolMap, subscriptionMap }) => {
       cover: String(parsed.data.cover || ''),
       badge: String(parsed.data.badge || ''),
       extraUrl: String(parsed.data.extra_url || ''),
-      startAt: hasBothWindow ? parsedStart : '',
-      endAt: hasBothWindow ? parsedEnd : '',
+      startAt: parsedStart || (parsedEnd ? publishedIso : ''),
+      endAt: parsedEnd,
       source: {
         channel: String(parsed.data.source?.channel || subscription.title || '').trim(),
         sender: String(parsed.data.source?.sender || '').trim(),
       },
       attachments: mergeAttachments(frontmatterAttachments, inlineAttachments),
-      published: toIso(parsed.data.published || new Date().toISOString(), filePath),
+      published: publishedIso,
       contentMarkdown: markdown,
       contentHtml: html,
     });
@@ -402,6 +431,7 @@ const compile = ({ notices, conclusions, schools, subscriptions, schoolMap }) =>
 
   return {
     generatedAt: new Date().toISOString(),
+    totalNotices: notices.length,
     schools: schools.map((item) => ({ slug: item.slug, name: item.name, shortName: item.shortName, icon: item.icon || '' })),
     subscriptions: subscriptions.map((item) => ({
       id: item.id,
@@ -419,11 +449,28 @@ const compile = ({ notices, conclusions, schools, subscriptions, schoolMap }) =>
   };
 };
 
+const loadPreviousNoticeCount = async () => {
+  const contentDataPath = path.join(PUBLIC_GENERATED_DIR, 'content-data.json');
+  try {
+    const raw = await fs.readFile(contentDataPath, 'utf8');
+    const data = JSON.parse(raw);
+    const previous = Number(data?.totalNotices ?? data?.notices?.length ?? 0);
+    return Number.isFinite(previous) ? previous : 0;
+  } catch {
+    return 0;
+  }
+};
+
 const writeOutputs = async (compiled) => {
   await fs.mkdir(PUBLIC_GENERATED_DIR, { recursive: true });
+  const previousNoticeCount = await loadPreviousNoticeCount();
+  const updatedCount = Math.max(0, compiled.totalNotices - previousNoticeCount);
 
   const contentData = {
     generatedAt: compiled.generatedAt,
+    updatedCount,
+    previousNoticeCount,
+    totalNotices: compiled.totalNotices,
     schools: compiled.schools,
     subscriptions: compiled.subscriptions,
     notices: compiled.notices,
@@ -438,6 +485,7 @@ const syncStaticAssets = async () => {
   await fs.mkdir(PUBLIC_DIR, { recursive: true });
   await fs.mkdir(PUBLIC_COVERS_DIR, { recursive: true });
   await fs.mkdir(PUBLIC_IMG_DIR, { recursive: true });
+  await fs.mkdir(PUBLIC_ATTACHMENTS_DIR, { recursive: true });
 
   try {
     await fs.cp(CARD_COVERS_DIR, PUBLIC_COVERS_DIR, { recursive: true, force: true });
@@ -449,6 +497,12 @@ const syncStaticAssets = async () => {
     await fs.cp(CONTENT_IMG_DIR, PUBLIC_IMG_DIR, { recursive: true, force: true });
   } catch {
     // ignore missing image directory
+  }
+
+  try {
+    await fs.cp(CONTENT_ATTACHMENTS_DIR, PUBLIC_ATTACHMENTS_DIR, { recursive: true, force: true });
+  } catch {
+    // ignore missing attachments directory
   }
 
   try {

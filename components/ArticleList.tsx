@@ -333,7 +333,7 @@ const ArticleListComponent: React.FC<ArticleListProps> = ({
               )}
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 max-w-7xl mx-auto">
+            <div className="grid grid-flow-row grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 max-w-7xl mx-auto">
               {paginatedArticlesWithCategory.map(article => (
                 <ArticleCard
                   key={article.guid || article.link}

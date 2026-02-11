@@ -206,7 +206,7 @@ schools:
     name: 经济与管理学院
     short_name: 经管院
     order: 180
-    icon: /img/schoolicon/economics-management.jpg
+    icon: /img/schoolicon/economics-management.png
     subscriptions:
       - title: 待接入
         url: ""
@@ -217,7 +217,7 @@ schools:
     name: 美术学院
     short_name: 美院
     order: 190
-    icon: /img/schoolicon/fine-arts.jpg
+    icon: /img/schoolicon/fine-arts.png
     subscriptions:
       - title: 待接入
         url: ""

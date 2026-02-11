@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import { Article, ArticleCategory } from '../types';
 import { getMediaUrl } from '../services/rssService';
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
-import { Calendar, ExternalLink } from "lucide-react";
+import { Calendar, ExternalLink, ImageOff } from "lucide-react";
 import { cn } from "@/lib/utils";
 import jxnuLogo from '../content/img/JXNUlogo.png';
 import { renderHighlightedText, renderSimpleMarkdown } from '../lib/simple-markdown';
@@ -156,7 +156,7 @@ export const ArticleCard: React.FC<ArticleCardProps> = React.memo(({
         <Card
           asChild
           className={cn(
-          "mobile-card-surface flex flex-col h-full min-h-[365px] overflow-hidden group transition-all duration-300 md:hover:shadow-md text-left w-full p-0",
+          "mobile-card-surface flex flex-col h-full min-h-[430px] overflow-hidden group transition-all duration-300 md:hover:shadow-md text-left w-full p-0",
           isSelected ? "ring-2 ring-primary border-primary" : "md:hover:border-primary/50"
         )}
       >
@@ -168,7 +168,7 @@ export const ArticleCard: React.FC<ArticleCardProps> = React.memo(({
           aria-label={`阅读文章: ${article.title}`}
           className="relative flex flex-col h-full w-full cursor-pointer touch-manipulation"
         >
-          <div className="relative aspect-[20/9] overflow-hidden w-full bg-muted/40">
+          <div className="relative aspect-video overflow-hidden w-full bg-muted/40">
             {showFullCover ? (
               <img
                 src={thumbnailUrl}
@@ -177,13 +177,18 @@ export const ArticleCard: React.FC<ArticleCardProps> = React.memo(({
                 className="w-full h-full object-cover transition-transform duration-500 md:group-hover:scale-105"
                 onError={() => setImgError(true)}
               />
+            ) : (imgError && Boolean(article.thumbnail?.original)) ? (
+              <div className="w-full h-full flex flex-col items-center justify-center gap-2 bg-muted/20 text-muted-foreground">
+                <ImageOff className="w-8 h-8" aria-hidden="true" />
+                <span className="text-xs font-medium">封面加载失败</span>
+              </div>
             ) : (
               <div className="w-full h-full flex items-center justify-center bg-gradient-to-b from-muted/20 to-muted/40">
                 <img
                   src={placeholderCover}
                   alt="默认院徽占位"
                   loading="lazy"
-                  className="w-20 h-20 object-contain opacity-85 transition-transform duration-500 md:group-hover:scale-110"
+                  className="w-24 h-24 object-contain opacity-85 transition-transform duration-500 md:group-hover:scale-110"
                 />
               </div>
             )}

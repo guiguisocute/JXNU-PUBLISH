@@ -46,6 +46,9 @@ type ConclusionItem = {
 
 type CompiledContent = {
   generatedAt: string;
+  updatedCount?: number;
+  previousNoticeCount?: number;
+  totalNotices?: number;
   schools: Array<{ slug: string; name: string; shortName?: string; icon?: string }>;
   subscriptions: Array<{
     id: string;
@@ -201,7 +204,7 @@ const DailySummaryPanel: React.FC<{
           <Sparkles className="w-3.5 h-3.5 text-primary" />
           <span>AI 每日总结</span>
         </div>
-        <div className="p-4 text-center text-xs text-muted-foreground">该日期暂无预制总结</div>
+        <div className="p-4 text-center text-xs text-muted-foreground">该日期暂无AI总结</div>
       </div>
     );
   }
@@ -547,7 +550,19 @@ const AppShell: React.FC<{
   }, [activeFilters, activeTagFilters, hideExpired, nowTs, searchMatches, timedOnly]);
 
   const filteredArticles = React.useMemo(() => {
-    return baseArticles.filter(matchesActiveCriteria);
+    const toTimestamp = (value: string) => {
+      const ts = new Date(value).getTime();
+      return Number.isFinite(ts) ? ts : 0;
+    };
+
+    return baseArticles
+      .filter(matchesActiveCriteria)
+      .slice()
+      .sort((a, b) => {
+        const diff = toTimestamp(b.pubDate) - toTimestamp(a.pubDate);
+        if (diff !== 0) return diff;
+        return (b.guid || '').localeCompare(a.guid || '', 'zh-CN');
+      });
   }, [baseArticles, matchesActiveCriteria]);
 
   const ARTICLES_PER_PAGE = 12;
@@ -683,7 +698,7 @@ const AppShell: React.FC<{
         darkMode={darkMode}
         setDarkMode={setDarkMode}
         generatedAt={contentData.generatedAt}
-        updatedCount={contentData.notices.length}
+        updatedCount={contentData.updatedCount ?? contentData.notices.length}
       />
 
       <main className="flex-1 flex flex-col h-full bg-background relative overflow-hidden min-w-0">
