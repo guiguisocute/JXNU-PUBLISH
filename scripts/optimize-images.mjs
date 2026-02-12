@@ -4,6 +4,9 @@ import { spawnSync } from 'node:child_process';
 
 const ROOT = process.cwd();
 const PUBLIC_DIR = path.join(ROOT, 'public');
+const CONTENT_DIR = path.join(ROOT, 'content');
+const CARD_COVERS_DIR = path.join(CONTENT_DIR, 'card', 'covers');
+const CONTENT_IMG_DIR = path.join(CONTENT_DIR, 'img');
 const GENERATED_CONTENT_PATH = path.join(PUBLIC_DIR, 'generated', 'content-data.json');
 
 const isRasterCoverUrl = (value) => {
@@ -21,16 +24,47 @@ const runFfmpeg = (args) => {
   }
 };
 
-const optimizeOne = async (urlPath) => {
-  const absInput = path.join(PUBLIC_DIR, urlPath.replace(/^\//, ''));
+const pathExists = async (value) => {
   try {
-    await fs.access(absInput);
+    await fs.access(value);
+    return true;
   } catch {
+    return false;
+  }
+};
+
+const resolveInputPath = (urlPath) => {
+  const relative = urlPath.replace(/^\//, '');
+  const publicPath = path.join(PUBLIC_DIR, relative);
+  if (urlPath.startsWith('/covers/')) {
+    return {
+      sourcePath: path.join(CARD_COVERS_DIR, urlPath.slice('/covers/'.length)),
+      outputBase: publicPath,
+    };
+  }
+  if (urlPath.startsWith('/img/')) {
+    return {
+      sourcePath: path.join(CONTENT_IMG_DIR, urlPath.slice('/img/'.length)),
+      outputBase: publicPath,
+    };
+  }
+  return {
+    sourcePath: publicPath,
+    outputBase: publicPath,
+  };
+};
+
+const optimizeOne = async (urlPath) => {
+  const { sourcePath, outputBase } = resolveInputPath(urlPath);
+  const absInput = (await pathExists(sourcePath)) ? sourcePath : outputBase;
+  if (!(await pathExists(absInput))) {
     return { skipped: true, reason: 'missing' };
   }
 
-  const ext = path.extname(absInput);
-  const base = absInput.slice(0, -ext.length);
+  const inputStat = await fs.stat(absInput);
+
+  const ext = path.extname(outputBase);
+  const base = outputBase.slice(0, -ext.length);
 
   const outputs = [
     { suffix: '.webp', width: null, quality: '72' },
@@ -38,6 +72,24 @@ const optimizeOne = async (urlPath) => {
     { suffix: '@md.webp', width: 768, quality: '70' },
     { suffix: '@lg.webp', width: 1200, quality: '72' },
   ];
+
+  let hasStaleOutput = false;
+  for (const output of outputs) {
+    const outPath = `${base}${output.suffix}`;
+    if (!(await pathExists(outPath))) {
+      hasStaleOutput = true;
+      break;
+    }
+    const outStat = await fs.stat(outPath);
+    if (outStat.mtimeMs < inputStat.mtimeMs) {
+      hasStaleOutput = true;
+      break;
+    }
+  }
+
+  if (!hasStaleOutput) {
+    return { skipped: true, reason: 'fresh' };
+  }
 
   for (const output of outputs) {
     const outPath = `${base}${output.suffix}`;
