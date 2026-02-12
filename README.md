@@ -1,183 +1,109 @@
 # JXNU PUBLISH
 
-JXNU PUBLISH 是一个面向江西师范大学多学院的信息聚合项目：
+JXNU PUBLISH 是一个面向江西师范大学多学院的通知聚合站。它把消息源统一沉淀为结构化 Markdown，再通过静态编译生成前端数据和 RSS。
 
-- 把各学院通知群消息整合为统一的 24x7 消息源
-- 用结构化 Markdown 作为内容中台，静态编译后对外发布
-- 同时支持网页浏览与 RSS 订阅，尽量打破学院之间的信息差
+## 项目目标
 
-这个项目的核心不是“做一个网页”，而是搭建一条可持续运行的消息生产链路：
+- 聚合学院通知，减少信息差。
+- 保持内容仓库可审计、可追溯、可自动部署。
+- 支持网页阅读、筛选、搜索与 RSS 订阅。
 
-- QQ 学院群消息转发到 Telegram
-- OpenClaw 智能体按 Skills 提取/清洗并写入 Markdown
-- GitHub Actions 自动编译并部署，前端只消费生成产物
-
----
-
-## 消息汇聚流程（Mermaid）
+## 端到端链路
 
 ```mermaid
 flowchart LR
-  A[各学院 QQ 通知群] --> B[AstrBot 脚本]
-  B --> C[NapCat 协议 + QQ 小号机器人]
-  C --> D[Telegram 汇聚频道]
-  D --> E[OpenClaw 智能体]
-  E --> F[按 Skills 生成/更新 Markdown]
-  F --> G[GitHub 仓库 content/*]
-  G --> H[GitHub Actions]
-  H --> I[build:content / build:images / build:rss]
-  I --> J[Vercel 静态站]
-  I --> K[RSS 输出: /rss.xml + /rss/<school>.xml]
+  A[QQ/Telegram 消息源] --> B[OpenClaw Agent]
+  B --> C[content/card + content/conclusion]
+  C --> D[GitHub test/dev/main]
+  D --> E[GitHub Actions build]
+  E --> F[dist + rss]
+  F --> G[远端静态目录]
 ```
 
----
+## 分支与发布策略
 
-## 后端更新方案（GitHub Actions）
+- `dev`: 日常开发与功能验证。
+- `test`: 自动化内容写入与测试环境发布。
+- `main`: 人工审核后生产发布。
 
-内容更新采用你之前讨论的 GitHub Actions 自动化方案，核心思路是“定时拉取 + 结构化写入 + 自动构建发布”：
+当前工作流：
 
-- 触发方式：定时（建议每 5~15 分钟）+ 手动 `workflow_dispatch`
-- 数据输入：Telegram 汇聚源（由 AstrBot + NapCat + QQ 机器人持续转发）
-- 智能处理：OpenClaw 按既定 Skills 解析消息、映射学院、补全 frontmatter、写入 `content/card/**/*.md`
-- 仓库动作：自动提交内容变更（仅内容目录）
-- 发布动作：执行 `pnpm run build`，生成静态站与 RSS 后部署
+- `./.github/workflows/deploy.yml`
+  - 触发：`test` 分支 push。
+  - 行为：拉取远端 `generated/content-data.json` -> `pnpm run build` -> `rsync dist/` 到测试站目录。
+- `./.github/workflows/deploy-main.yml`
+  - 触发：`main` 分支 push。
+  - 行为：同上，部署到生产目录。
+  - 支持 `PROD_*` secrets，不填时回退到默认 `DEPLOY_*`（`PROD_DEPLOY_PATH` 仍建议单独配置）。
 
-建议分成两个工作流：
+## 主要功能
 
-1. `sync-content.yml`：拉消息 -> 调用智能体 -> 更新 Markdown -> 提交
-2. `deploy.yml`：构建并部署（Vercel）
-
----
-
-## 功能特性
-
-- 学院维度聚合（学院汇总流 + 订阅源流）
-- 标签、日期、时效（限时/过期）筛选
-- 详情弹层阅读与附件优先展示
-- 全站 + 分学院 RSS 订阅
-- 搜索索引预编译（标题 + 描述 + 正文纯文本）
-- Markdown 内容编译与 frontmatter 严格校验
-
----
-
-## 技术栈
-
-- React 19 + TypeScript
-- Vite 6 + Tailwind CSS
-- Radix UI + Framer Motion
-- gray-matter + marked（内容编译）
-- GitHub Actions（自动更新/构建）
-
----
+- 学院汇总、订阅源流、全校汇总三种视角。
+- 全校模式蓝色学院标签，点击直达学院汇总。
+- 标签、日期、时效筛选；搜索标题+正文索引。
+- 限时活动进度条与读秒展示（<10 分钟）。
+- 详情弹层附件优先展示，支持来源提示。
+- RSS：全站 + 分学院。
 
 ## 本地开发
 
-### 1) 安装依赖
-
 ```bash
 pnpm install
-```
-
-### 2) （可选）生成示例内容
-
-```bash
-pnpm run generate:sample
-```
-
-### 3) 编译内容
-
-```bash
-pnpm run build:content
-```
-
-### 3.1) 生成 RSS（全站 + 分学院）
-
-```bash
-pnpm run build:rss
-```
-
-### 3.2) 生成封面自适应 WebP 版本
-
-```bash
-pnpm run build:images
-```
-
-### 4) 启动开发服务器
-
-```bash
 pnpm run dev
 ```
 
 默认地址：`http://localhost:5173`
 
----
-
-## 构建与预览
+## 构建命令
 
 ```bash
+pnpm run build:content
+pnpm run build:images
+pnpm run build:rss
 pnpm run build
 pnpm run preview
 ```
 
-说明：`build` 前会自动执行 `prebuild`（内容编译 + RSS 生成）。
+`pnpm run build` 前会自动执行 `prebuild`：
 
-当前 `prebuild` 会自动执行：
+- `build:content` 生成 `public/generated/content-data.json`
+- `build:images` 生成封面 webp 变体（增量）
+- `build:rss` 生成 `public/rss.xml` 与 `public/rss/*.xml`
 
-- `pnpm run build:content`
-- `pnpm run build:images`
-- `pnpm run build:rss`
+## 内容结构
 
-可选环境变量：
+- `content/card/**/*.md`: 通知卡片。
+- `content/conclusion/*.md`: 学院总结与 daily 总结。
+- `config/subscriptions.yaml`: 学院与订阅配置唯一来源。
+- `public/generated/*.json`: 前端加载数据。
 
-- `SITE_URL`（推荐）或 `RSS_SITE_URL`
-  - 用于生成 RSS 里的绝对链接。
-  - 未设置时默认使用 `https://jxnu-publish.vercel.app`。
+## 订阅配置规则
 
----
+`config/subscriptions.yaml`:
 
-## 内容目录说明
+- 学院字段：`slug` `name` `short_name` `order` `icon`
+- 订阅字段：`title` `number?` `url` `icon` `enabled` `order`
+- `number` 仅用于人工查阅（同名群区分），不参与前端展示。
 
-- `content/card/**/*.md`：通知卡片正文与 frontmatter（建议按学院 slug 分子目录管理）
-- `content/conclusion/*.md`：学院总结与 `daily` 按日总结
-- `config/subscriptions.yaml`：订阅结构与学院映射（唯一配置源）
-- `public/generated/*.json`：前端运行时加载数据
-- `public/covers/*`：由 `content/card/covers` 同步的封面资源
+关于 `number` 的实践建议：
 
----
+- 当多个订阅 `title` 相同或高度相似时，为每个订阅补一个稳定 `number`（QQ群号/内部编号）。
+- Bot 在工作日志中应记录 `school_slug + title + number`，便于后续追踪与人工核对。
 
-## 订阅配置结构
+## 卡片 frontmatter 规则（当前实现）
 
-`config/subscriptions.yaml` 采用“学院包裹订阅源”的层级结构：
+- 必填：`id` `school_slug` `title` `description` `published` `source`。
+- 不再手写：`school_name` `subscription_id`。
+- `subscription_id` 由编译器根据 `school_slug + source.channel` 自动推导。
+- 缺失/无效 `school_slug` 会回退到 `unknown`。
+- 缺失或无法匹配 `source.channel` 会回退到 `{school_slug}-未知来源`。
 
-- 学院层字段：`slug`、`name`、`short_name`、`order`、`icon`
-- 订阅层字段：`title`、`number`（可选）、`url`、`icon`、`enabled`、`order`
-- 卡片 frontmatter 不再手写 `subscription_id`，编译时由 `school_slug + source.channel` 自动推导：
-  - 规则：`<school_slug>-<slugify(source.channel)>`
+补充通知处理约定：
+
+- `补充通知`、`更正通知`、`二次通知` 优先并入原卡片，不单独新建重复卡片。
+- 并入后 `published` 更新为该通知链最新时间，并同步更新附件和受影响的时间字段。
 
 示例：
-
-```yaml
-version: 2
-schools:
-  - slug: ai
-    name: 人工智能学院
-    short_name: 计信院
-    order: 10
-    icon: ""
-    subscriptions:
-      - title: 25-26学年学生干部通知群
-        number: "123456789"
-        url: ""
-        icon: ""
-        enabled: true
-        order: 30
-```
-
-说明：`order` 为学院内排序；`number` 仅用于人工查阅（如同名群区分），不参与前端展示；若同一学院下两个订阅生成出相同 id，编译会直接报错。
-
----
-
-## 卡片 Frontmatter 示例
 
 ```md
 ---
@@ -185,7 +111,7 @@ id: "20260201-ai-001"
 school_slug: "ai"
 title: "示例通知"
 description: "通知摘要"
-published: 2026-02-01T09:00:00+08:00
+published: '2026-02-01T09:00:00+08:00'
 category: "通知公告"
 tags: ["报名事项", "截止提醒"]
 pinned: false
@@ -203,28 +129,29 @@ attachments: []
 通知正文（Markdown）
 ```
 
----
+## 前端分页与路由
 
-## 部署
+- 页码通过 URL 查询参数 `p` 同步：`/school/ai?p=3`。
+- PC 端点击分页 `...` 可输入页码跳转。
+- 手机端点击 `当前页/总页` 可输入页码跳转。
 
-项目已包含 `vercel.json`，可直接部署到 Vercel（静态前端 + SPA rewrites）。
+## 部署与环境变量
 
-最简流程：
+核心 secrets（测试环境）：
 
-1. 推送代码到 GitHub
-2. 在 Vercel 导入仓库
-3. Build Command 使用默认（`pnpm run build`）
-4. Output Directory 为 `dist`
+- `SITE_URL`
+- `DEPLOY_HOST`
+- `DEPLOY_PORT`
+- `DEPLOY_USER`
+- `DEPLOY_PATH`
+- `DEPLOY_SSH_KEY`
 
----
+生产环境可使用 `PROD_*` 对应变量（main workflow）。
 
-## RSS 订阅地址
+## RSS 地址
 
 - 全站：`/rss.xml`
 - 分学院：`/rss/<school_slug>.xml`
-  - 示例：`/rss/ai.xml`
-
----
 
 ## License
 
