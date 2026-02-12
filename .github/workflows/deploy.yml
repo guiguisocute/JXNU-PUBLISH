@@ -72,8 +72,14 @@ jobs:
       - name: Add deploy host to known_hosts
         run: ssh-keyscan -p "$DEPLOY_PORT" "$DEPLOY_HOST" >> ~/.ssh/known_hosts
 
+      - name: Verify remote deploy path is writable
+        run: |
+          ssh -p "$DEPLOY_PORT" "$DEPLOY_USER@$DEPLOY_HOST" "set -e; test -n '$DEPLOY_PATH'; mkdir -p '$DEPLOY_PATH'; test -w '$DEPLOY_PATH'"
+
       - name: Deploy dist via rsync
         run: |
           rsync -az --delete \
+            --omit-dir-times \
+            --no-perms --no-owner --no-group \
             -e "ssh -p $DEPLOY_PORT" \
             dist/ "$DEPLOY_USER@$DEPLOY_HOST:$DEPLOY_PATH/"

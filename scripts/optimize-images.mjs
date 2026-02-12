@@ -18,10 +18,19 @@ const isRasterCoverUrl = (value) => {
 
 const runFfmpeg = (args) => {
   const result = spawnSync('ffmpeg', ['-y', '-loglevel', 'error', ...args], { stdio: 'pipe' });
+  if (result.error) {
+    throw result.error;
+  }
   if (result.status !== 0) {
     const err = result.stderr?.toString()?.trim() || 'unknown ffmpeg error';
     throw new Error(err);
   }
+};
+
+const hasFfmpeg = () => {
+  const result = spawnSync('ffmpeg', ['-version'], { stdio: 'pipe' });
+  if (result.error) return false;
+  return result.status === 0;
 };
 
 const pathExists = async (value) => {
@@ -111,6 +120,11 @@ const optimizeOne = async (urlPath) => {
 };
 
 const main = async () => {
+  if (!hasFfmpeg()) {
+    console.warn('[optimize-images] ffmpeg is unavailable, skip image optimization.');
+    return;
+  }
+
   const raw = await fs.readFile(GENERATED_CONTENT_PATH, 'utf8');
   const data = JSON.parse(raw);
   const notices = Array.isArray(data.notices) ? data.notices : [];
