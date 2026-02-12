@@ -36,6 +36,8 @@ export interface Article {
   link: string;
   guid: string;
   author: string;
+  schoolSlug?: string;
+  schoolShortName?: string;
   thumbnail: MediaUrl;       // 缩略图双URL格式
   description: string;
   content: string;

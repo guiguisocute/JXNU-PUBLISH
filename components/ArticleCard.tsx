@@ -21,6 +21,9 @@ interface ArticleCardProps {
   nowTs?: number;
   searchQuery?: string;
   priorityImage?: boolean;
+  showSchoolTag?: boolean;
+  onSchoolTagClick?: (schoolSlug?: string) => void;
+  isAllSchoolsView?: boolean;
 }
 
 export const ArticleCard: React.FC<ArticleCardProps> = React.memo(({
@@ -35,6 +38,9 @@ export const ArticleCard: React.FC<ArticleCardProps> = React.memo(({
   nowTs = Date.now(),
   searchQuery = '',
   priorityImage = false,
+  showSchoolTag = false,
+  onSchoolTagClick,
+  isAllSchoolsView = false,
 }) => {
   const [imgError, setImgError] = useState(false);
 
@@ -166,6 +172,15 @@ export const ArticleCard: React.FC<ArticleCardProps> = React.memo(({
     return Math.max(0, Math.min(1, ratio));
   }, [timing.progress]);
 
+  const pinnedLabel = useMemo(() => {
+    if (!article.pinned) return '';
+    if (isAllSchoolsView && article.schoolSlug && article.schoolSlug !== 'unknown') {
+      const shortName = String(article.schoolShortName || article.feedTitle || '').trim();
+      return `${shortName || '该院'}置顶`;
+    }
+    return '置顶';
+  }, [article.feedTitle, article.pinned, article.schoolShortName, article.schoolSlug, isAllSchoolsView]);
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 10 }}
@@ -221,9 +236,21 @@ export const ArticleCard: React.FC<ArticleCardProps> = React.memo(({
           </div>
 
           <div className="absolute top-2 left-2 z-20 flex flex-wrap gap-1 items-start max-w-[90%]">
+            {showSchoolTag && article.feedTitle && (
+              <button
+                type="button"
+                onClick={(event) => {
+                  event.stopPropagation();
+                  onSchoolTagClick?.(article.schoolSlug);
+                }}
+                className="inline-flex items-center rounded text-[11px] px-2.5 py-0.5 font-semibold border border-sky-600/70 bg-sky-600 text-white hover:bg-sky-700 transition-colors"
+              >
+                {article.feedTitle}
+              </button>
+            )}
             {article.pinned && (
               <span className="inline-flex items-center rounded bg-amber-100 text-amber-800 border border-amber-300 text-[11px] px-2 py-0.5 font-semibold">
-                置顶
+                {pinnedLabel}
               </span>
             )}
             <button

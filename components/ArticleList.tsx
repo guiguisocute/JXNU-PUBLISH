@@ -52,6 +52,8 @@ interface ArticleListProps {
   onScrollPositionChange?: (feedId: string, position: number) => void;
   loadedCount?: number;
   totalCount?: number;
+  isAllSchoolsView?: boolean;
+  onSchoolSummaryJump?: (schoolSlug?: string) => void;
 }
 
 const ArticleListComponent: React.FC<ArticleListProps> = ({
@@ -89,7 +91,9 @@ const ArticleListComponent: React.FC<ArticleListProps> = ({
   initialScrollPosition = 0,
   onScrollPositionChange,
   loadedCount,
-  totalCount
+  totalCount,
+  isAllSchoolsView = false,
+  onSchoolSummaryJump,
 }) => {
   const [pullDistance, setPullDistance] = React.useState(0);
   const [isSearchOpen, setIsSearchOpen] = React.useState(false);
@@ -340,6 +344,9 @@ const ArticleListComponent: React.FC<ArticleListProps> = ({
                   nowTs={nowTs}
                   searchQuery={searchQuery}
                   priorityImage={currentPage === 1 && index < 2}
+                  showSchoolTag={isAllSchoolsView}
+                  onSchoolTagClick={onSchoolSummaryJump}
+                  isAllSchoolsView={isAllSchoolsView}
                 />
               ))}
             </div>

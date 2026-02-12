@@ -107,7 +107,8 @@ const DailySummaryPanel: React.FC<{
   selectedDate: Date | null;
   selectedSchoolSlug: string | null;
   conclusionBySchool: Record<string, ConclusionItem>;
-}> = React.memo(({ selectedDate, selectedSchoolSlug, conclusionBySchool }) => {
+  schoolNameBySlug?: Record<string, string>;
+}> = React.memo(({ selectedDate, selectedSchoolSlug, conclusionBySchool, schoolNameBySlug = {} }) => {
   const [isTypingSummary, setIsTypingSummary] = React.useState(false);
   const [dailySummaryText, setDailySummaryText] = React.useState('');
   const [summaryNotFound, setSummaryNotFound] = React.useState(false);
@@ -135,18 +136,39 @@ const DailySummaryPanel: React.FC<{
     if (!selectedDate || !selectedSchoolSlug) return;
 
     const dateKey = toDateKey(selectedDate);
-    const bySchool = conclusionBySchool[selectedSchoolSlug];
-    const target = bySchool?.byDate?.[dateKey];
+    let fullText = '';
 
-    if (!target?.markdown) {
-      setSummaryNotFound(true);
-      return;
-    }
+    if (selectedSchoolSlug === 'all-schools') {
+      const mergedBlocks = (Object.entries(conclusionBySchool) as Array<[string, ConclusionItem]>)
+        .map(([slug, item]) => {
+          const markdown = item?.byDate?.[dateKey]?.markdown || '';
+          const text = markdownToPlainText(markdown);
+          if (!text) return null;
+          const schoolName = schoolNameBySlug[slug] || slug;
+          return `【${schoolName}】\n${text}`;
+        })
+        .filter((value): value is string => Boolean(value));
 
-    const fullText = markdownToPlainText(target.markdown);
-    if (!fullText) {
-      setSummaryNotFound(true);
-      return;
+      if (mergedBlocks.length === 0) {
+        setSummaryNotFound(true);
+        return;
+      }
+
+      fullText = mergedBlocks.join('\n\n----------------\n\n');
+    } else {
+      const bySchool = conclusionBySchool[selectedSchoolSlug];
+      const target = bySchool?.byDate?.[dateKey];
+
+      if (!target?.markdown) {
+        setSummaryNotFound(true);
+        return;
+      }
+
+      fullText = markdownToPlainText(target.markdown);
+      if (!fullText) {
+        setSummaryNotFound(true);
+        return;
+      }
     }
 
     setIsTypingSummary(true);
@@ -164,7 +186,7 @@ const DailySummaryPanel: React.FC<{
         setIsTypingSummary(false);
       }
     }, 45);
-  }, [conclusionBySchool, selectedDate, selectedSchoolSlug]);
+  }, [conclusionBySchool, schoolNameBySlug, selectedDate, selectedSchoolSlug]);
 
   if (dailySummaryText) {
     return (
@@ -173,8 +195,8 @@ const DailySummaryPanel: React.FC<{
           <Sparkles className="w-3.5 h-3.5 text-primary" />
           <span>AI 每日总结</span>
         </div>
-        <ScrollArea className="max-h-[320px]">
-          <div className="p-3 text-xs leading-relaxed whitespace-pre-wrap text-foreground/90">
+        <ScrollArea className="h-[320px]">
+          <div className="p-3 pr-4 text-xs leading-relaxed whitespace-pre-wrap text-foreground/90">
             {dailySummaryText}
             {isTypingSummary && <span className="ml-1 inline-block w-2 animate-pulse">|</span>}
           </div>
@@ -222,12 +244,14 @@ const DailySummaryPanel: React.FC<{
 });
 DailySummaryPanel.displayName = 'DailySummaryPanel';
 
-const toArticle = (notice: NoticeItem, fallbackCover = ''): Article => ({
+const toArticle = (notice: NoticeItem, fallbackCover = '', schoolShortName = ''): Article => ({
   title: notice.title,
   pubDate: notice.published,
   link: notice.extraUrl || '',
   guid: notice.id,
   author: notice.source?.sender || notice.schoolName,
+  schoolSlug: notice.schoolSlug,
+  schoolShortName,
   thumbnail: createMediaUrl(notice.cover || fallbackCover || ''),
   description: notice.description,
   content: notice.contentHtml,
@@ -379,6 +403,28 @@ const AppShell: React.FC<{
     const schoolIconBySlug = new Map<string, string>(
       contentData.schools.map((school) => [school.slug, school.icon || '/img/JXNUlogo.png'])
     );
+    const schoolShortNameBySlug = new Map<string, string>(
+      contentData.schools.map((school) => [school.slug, school.shortName || school.name])
+    );
+
+    map.set('all-schools', {
+      meta: {
+        id: 'all-schools',
+        category: '全校',
+        isSub: false,
+        customTitle: '全校汇总',
+        sourceChannel: '全校汇总',
+        hiddenInSidebar: true,
+      },
+      feed: {
+        url: '/',
+        title: '全校汇总',
+        description: '全校全部通知流',
+        image: createMediaUrl('/img/JXNUlogo.png'),
+        category: '全校',
+        items: [],
+      },
+    });
 
     for (const school of contentData.schools) {
       const overviewId = `school-${school.slug}-all`;
@@ -432,24 +478,49 @@ const AppShell: React.FC<{
       }
 
       const fallbackCover = schoolIconBySlug.get(notice.schoolSlug) || '/img/JXNUlogo.png';
+      const schoolShortName = schoolShortNameBySlug.get(notice.schoolSlug) || notice.schoolName;
 
       const feedId = notice.subscriptionId;
       const overviewId = `school-${notice.schoolSlug}-all`;
 
-      map.get(overviewId)?.feed.items.push(toArticle(notice, fallbackCover));
-      map.get(feedId)!.feed.items.push(toArticle(notice, fallbackCover));
+      map.get('all-schools')?.feed.items.push(toArticle(notice, fallbackCover, schoolShortName));
+      map.get(overviewId)?.feed.items.push(toArticle(notice, fallbackCover, schoolShortName));
+      map.get(feedId)!.feed.items.push(toArticle(notice, fallbackCover, schoolShortName));
     }
 
-    const allFeeds = Array.from(map.values());
-    allFeeds.forEach(({ feed }) => {
-      feed.items.sort((a, b) => { if (a.pinned !== b.pinned) return a.pinned ? -1 : 1; return new Date(b.pubDate).getTime() - new Date(a.pubDate).getTime(); });
+    const entries = Array.from(map.entries());
+    entries.forEach(([feedId, entry]) => {
+      entry.feed.items.sort((a, b) => {
+        if (feedId === 'all-schools') {
+          const aPinned = Boolean(a.pinned && a.schoolSlug === 'unknown');
+          const bPinned = Boolean(b.pinned && b.schoolSlug === 'unknown');
+          if (aPinned !== bPinned) return aPinned ? -1 : 1;
+          return new Date(b.pubDate).getTime() - new Date(a.pubDate).getTime();
+        }
+
+        if (a.pinned !== b.pinned) return a.pinned ? -1 : 1;
+        return new Date(b.pubDate).getTime() - new Date(a.pubDate).getTime();
+      });
+
+      if (entry.meta.sourceChannel === '未知来源' && entry.feed.items.length === 0) {
+        entry.meta.hiddenInSidebar = true;
+      }
+
+      if (entry.meta.id === 'school-unknown-all' && entry.feed.items.length === 0) {
+        entry.meta.hiddenInSidebar = true;
+      }
     });
 
-    return allFeeds;
+    return entries.map(([, value]) => value);
   }, [contentData]);
 
   const schoolShortNameMap = React.useMemo<Record<string, string>>(
     () => Object.fromEntries(contentData.schools.map((school) => [school.slug, school.shortName || school.name])),
+    [contentData.schools]
+  );
+
+  const schoolNameBySlug = React.useMemo<Record<string, string>>(
+    () => Object.fromEntries(contentData.schools.map((school) => [school.slug, school.name])),
     [contentData.schools]
   );
 
@@ -462,6 +533,7 @@ const AppShell: React.FC<{
   const groupedFeeds = React.useMemo(() => {
     const root: Map<string, CategoryNode> = new Map();
     feedConfigs.forEach((meta) => {
+      if (meta.hiddenInSidebar) return;
       const parts = (meta.category || '').split('/').filter(Boolean);
       if (parts.length === 0) {
         const key = '__uncategorized__';
@@ -514,6 +586,7 @@ const AppShell: React.FC<{
   }, [feedConfigs, slug]);
 
   const selectedFeed = selectedFeedMeta ? feedContentCache[selectedFeedMeta.id] || null : null;
+  const isAllSchoolsView = selectedFeedMeta?.id === 'all-schools';
 
   const searchMatches = React.useMemo(() => {
     const query = searchQuery.trim().toLowerCase();
@@ -573,12 +646,14 @@ const AppShell: React.FC<{
       .filter(matchesActiveCriteria)
       .slice()
       .sort((a, b) => {
-        if (a.pinned !== b.pinned) return a.pinned ? -1 : 1;
+        const aPinnedPriority = isAllSchoolsView ? Boolean(a.pinned && a.schoolSlug === 'unknown') : Boolean(a.pinned);
+        const bPinnedPriority = isAllSchoolsView ? Boolean(b.pinned && b.schoolSlug === 'unknown') : Boolean(b.pinned);
+        if (aPinnedPriority !== bPinnedPriority) return aPinnedPriority ? -1 : 1;
         const diff = toTimestamp(b.pubDate) - toTimestamp(a.pubDate);
         if (diff !== 0) return diff;
         return (b.guid || '').localeCompare(a.guid || '', 'zh-CN');
       });
-  }, [baseArticles, matchesActiveCriteria]);
+  }, [baseArticles, isAllSchoolsView, matchesActiveCriteria]);
 
   const ARTICLES_PER_PAGE = 12;
   const totalPages = Math.max(1, Math.ceil(filteredArticles.length / ARTICLES_PER_PAGE));
@@ -610,6 +685,7 @@ const AppShell: React.FC<{
   }, []);
 
   const handleFeedSelect = React.useCallback((meta: FeedMeta) => {
+    const isReselectingCurrent = selectedFeedMeta?.id === meta.id;
     setLoadingFeedId(meta.id);
     setTimeout(() => {
       setLoadingFeedId(null);
@@ -618,9 +694,23 @@ const AppShell: React.FC<{
       setSearchQuery('');
       setActiveFilters([]);
       setActiveTagFilters([]);
+      if (isReselectingCurrent) {
+        navigate('/');
+        return;
+      }
       const routeSlug = isSummaryFeedMeta(meta) && meta.schoolSlug ? meta.schoolSlug : meta.id;
       navigate(`/school/${routeSlug}`);
     }, 120);
+  }, [navigate, selectedFeedMeta?.id]);
+
+  const handleSchoolSummaryJump = React.useCallback((schoolSlug?: string) => {
+    if (!schoolSlug) return;
+    setSelectedDate(null);
+    setCurrentPage(1);
+    setSearchQuery('');
+    setActiveFilters([]);
+    setActiveTagFilters([]);
+    navigate(`/school/${schoolSlug}`);
   }, [navigate]);
 
   const handleArticleSelect = React.useCallback((article: Article) => {
@@ -785,6 +875,8 @@ const AppShell: React.FC<{
               initialScrollPosition={0}
               loadedCount={selectedFeed.items.length}
               totalCount={selectedFeed.items.length}
+              isAllSchoolsView={isAllSchoolsView}
+              onSchoolSummaryJump={handleSchoolSummaryJump}
             />
           )}
         </div>
@@ -925,6 +1017,7 @@ const AppShell: React.FC<{
               selectedDate={selectedDate}
               selectedSchoolSlug={selectedFeedMeta?.schoolSlug || selectedFeedMeta?.id || null}
               conclusionBySchool={contentData.conclusionBySchool}
+              schoolNameBySlug={schoolNameBySlug}
             />
           </div>
         </div>
@@ -939,7 +1032,7 @@ const AppShell: React.FC<{
         canNext={activeIndex >= 0 && activeIndex < filteredArticles.length - 1}
         shareUrl={
           activeArticle && selectedFeedMeta
-            ? `${typeof window !== 'undefined' ? window.location.origin : ''}/school/${isSummaryFeedMeta(selectedFeedMeta) && selectedFeedMeta.schoolSlug ? selectedFeedMeta.schoolSlug : selectedFeedMeta.id}#${activeArticle.guid}`
+            ? `${typeof window !== 'undefined' ? window.location.origin : ''}/school/${selectedFeedMeta.id === 'all-schools' ? (activeArticle.schoolSlug || selectedFeedMeta.id) : (isSummaryFeedMeta(selectedFeedMeta) && selectedFeedMeta.schoolSlug ? selectedFeedMeta.schoolSlug : selectedFeedMeta.id)}#${activeArticle.guid}`
             : ''
         }
       />

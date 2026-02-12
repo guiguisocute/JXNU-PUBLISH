@@ -283,6 +283,24 @@ const parseConfig = async () => {
         order: Number.isFinite(Number(item.order)) ? Number(item.order) : index,
       });
     }
+
+    const unknownSourceSuffix = slugifyChannel('未知来源');
+    const unknownSourceId = `${school.slug}-${unknownSourceSuffix}`;
+    const hasUnknownSource = subscriptions.some((item) => item.id === unknownSourceId);
+    if (!hasUnknownSource) {
+      subscriptions.push({
+        id: unknownSourceId,
+        schoolSlug: school.slug,
+        schoolName: school.name,
+        schoolIcon: school.icon,
+        title: '未知来源',
+        number: '',
+        url: '',
+        icon: '/img/subicon/group-default.svg',
+        enabled: true,
+        order: 99990,
+      });
+    }
   }
 
   const subscriptionIdSet = new Set();
@@ -321,14 +339,16 @@ const loadCards = async ({ schoolMap, subscriptionMap }) => {
     if (seen.has(id)) fail(`Duplicate card id: ${id}`, filePath);
     seen.add(id);
 
-    const schoolSlug = ensureString(parsed.data.school_slug, 'school_slug', filePath);
-    if (!schoolMap.has(schoolSlug)) fail(`Invalid school_slug: ${schoolSlug}`, filePath);
+    const rawSchoolSlug = String(parsed.data.school_slug || '').trim();
+    const schoolSlug = rawSchoolSlug && schoolMap.has(rawSchoolSlug) ? rawSchoolSlug : 'unknown';
     const school = schoolMap.get(schoolSlug);
 
+    const fallbackChannel = '未知来源';
     const sourceChannel = String(parsed.data.source?.channel || '').trim();
+    const resolvedChannel = sourceChannel || fallbackChannel;
     const legacySubscriptionId = String(parsed.data.subscription_id || '').trim();
 
-    let subscriptionId = sourceChannel ? `${schoolSlug}-${slugifyChannel(sourceChannel)}` : '';
+    let subscriptionId = `${schoolSlug}-${slugifyChannel(resolvedChannel)}`;
     let subscription = subscriptionId ? subscriptionMap.get(subscriptionId) : null;
 
     if (!subscription && legacySubscriptionId) {
@@ -340,8 +360,13 @@ const loadCards = async ({ schoolMap, subscriptionMap }) => {
     }
 
     if (!subscription) {
-      if (!sourceChannel) fail('Missing source.channel', filePath);
-      fail(`Invalid source.channel(${sourceChannel}), cannot map to subscription in school_slug(${schoolSlug})`, filePath);
+      const schoolUnknownSourceId = `${schoolSlug}-${slugifyChannel(fallbackChannel)}`;
+      subscription = subscriptionMap.get(schoolUnknownSourceId) || null;
+      subscriptionId = schoolUnknownSourceId;
+    }
+
+    if (!subscription) {
+      fail(`Invalid source.channel(${resolvedChannel}), cannot map to subscription in school_slug(${schoolSlug})`, filePath);
     }
     if (!subscription.enabled) fail(`source.channel maps to disabled subscription_id: ${subscriptionId}`, filePath);
 
@@ -371,7 +396,7 @@ const loadCards = async ({ schoolMap, subscriptionMap }) => {
       startAt: parsedStart || (parsedEnd ? publishedIso : ''),
       endAt: parsedEnd,
       source: {
-        channel: sourceChannel || subscription.title,
+        channel: sourceChannel || fallbackChannel,
         sender: String(parsed.data.source?.sender || '').trim(),
       },
       attachments: mergeAttachments(frontmatterAttachments, inlineAttachments),
