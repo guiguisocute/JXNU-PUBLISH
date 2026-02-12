@@ -58,6 +58,19 @@ jobs:
           test -n "$DEPLOY_USER" || (echo "Missing secret: PROD_DEPLOY_USER" && exit 1)
           test -n "$DEPLOY_PATH" || (echo "Missing secret: PROD_DEPLOY_PATH" && exit 1)
 
+      - name: Setup SSH agent
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.PROD_DEPLOY_SSH_KEY != '' && secrets.PROD_DEPLOY_SSH_KEY || secrets.DEPLOY_SSH_KEY }}
+
+      - name: Add deploy host to known_hosts
+        run: ssh-keyscan -p "$DEPLOY_PORT" "$DEPLOY_HOST" >> ~/.ssh/known_hosts
+
+      - name: Restore previous content snapshot
+        run: |
+          mkdir -p public/generated
+          scp -P "$DEPLOY_PORT" "$DEPLOY_USER@$DEPLOY_HOST:$DEPLOY_PATH/generated/content-data.json" public/generated/content-data.json || true
+
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
@@ -69,14 +82,6 @@ jobs:
 
       - name: Prepare SPA fallback
         run: cp dist/index.html dist/404.html
-
-      - name: Setup SSH agent
-        uses: webfactory/ssh-agent@v0.9.0
-        with:
-          ssh-private-key: ${{ secrets.PROD_DEPLOY_SSH_KEY != '' && secrets.PROD_DEPLOY_SSH_KEY || secrets.DEPLOY_SSH_KEY }}
-
-      - name: Add deploy host to known_hosts
-        run: ssh-keyscan -p "$DEPLOY_PORT" "$DEPLOY_HOST" >> ~/.ssh/known_hosts
 
       - name: Verify remote deploy path is writable
         run: |

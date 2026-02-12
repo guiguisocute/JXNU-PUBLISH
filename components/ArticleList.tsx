@@ -227,17 +227,9 @@ const ArticleListComponent: React.FC<ArticleListProps> = ({
               {selectedDate ? (
                 `筛选日期: ${selectedDate.toLocaleDateString()}`
               ) : (
-                <span className="flex items-center gap-2">
-                  <span>最新内容</span>
-                  {totalCount && totalCount > 0 && activeFilters.length === 0 && (
-                    <>
-                      <span className="w-px h-3 bg-border/60" />
-                      <span className="font-black text-foreground/80">
-                        已加载 {loadedCount} <span className="text-muted-foreground/50 mx-0.5">/</span> {totalCount}
-                      </span>
-                    </>
-                  )}
-                </span>
+                totalCount && totalCount > 0 && activeFilters.length === 0
+                  ? `已加载 ${loadedCount ?? 0} / ${totalCount}`
+                  : ''
               )}
             </p>
           </div>
