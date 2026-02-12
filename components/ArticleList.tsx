@@ -97,6 +97,8 @@ const ArticleListComponent: React.FC<ArticleListProps> = ({
 }) => {
   const [pullDistance, setPullDistance] = React.useState(0);
   const [isSearchOpen, setIsSearchOpen] = React.useState(false);
+  const [pageJumpMode, setPageJumpMode] = React.useState<'mobile' | 'desktop' | null>(null);
+  const [pageJumpInput, setPageJumpInput] = React.useState('');
   const touchStartRef = React.useRef<number>(0);
   const rafRef = React.useRef<number | null>(null);
   const prevPageRef = React.useRef(currentPage);
@@ -169,6 +171,27 @@ const ArticleListComponent: React.FC<ArticleListProps> = ({
   }, [getViewport, selectedDate]);
 
   const hasSearchOrFilter = searchQuery.trim().length > 0 || activeFilters.length > 0 || activeTagFilters.length > 0 || Boolean(selectedDate);
+
+  const openPageJump = React.useCallback((mode: 'mobile' | 'desktop') => {
+    setPageJumpMode(mode);
+    setPageJumpInput(String(currentPage));
+  }, [currentPage]);
+
+  const closePageJump = React.useCallback(() => {
+    setPageJumpMode(null);
+    setPageJumpInput('');
+  }, []);
+
+  const submitPageJump = React.useCallback(() => {
+    const parsed = Number(pageJumpInput.trim());
+    if (!Number.isFinite(parsed)) {
+      closePageJump();
+      return;
+    }
+    const target = Math.min(totalPages, Math.max(1, Math.floor(parsed)));
+    setCurrentPage(target);
+    closePageJump();
+  }, [closePageJump, pageJumpInput, setCurrentPage, totalPages]);
 
   const handleTouchStart = (e: React.TouchEvent) => {
     if (articleListRef.current?.scrollTop === 0) {
@@ -367,7 +390,13 @@ const ArticleListComponent: React.FC<ArticleListProps> = ({
                 </Button>
 
                 <div className="min-w-0 rounded-full border bg-muted/50 px-3 py-1 text-xs font-bold">
-                  {currentPage} / {totalPages || 1}
+                  <button
+                    type="button"
+                    className="min-w-0"
+                    onClick={() => openPageJump('mobile')}
+                  >
+                    {currentPage} / {totalPages || 1}
+                  </button>
                 </div>
 
                 <Button
@@ -393,7 +422,20 @@ const ArticleListComponent: React.FC<ArticleListProps> = ({
                 </Button>
                 <div className="flex max-w-full items-center gap-1 overflow-x-auto rounded-full border bg-muted/50 p-1">
                   {visiblePageTokens.map(token => {
-                    if (typeof token === 'string') return <span key={token} className="w-8 text-center text-muted-foreground">···</span>;
+                    if (typeof token === 'string') {
+                      return (
+                        <button
+                          key={token}
+                          type="button"
+                          onClick={() => openPageJump('desktop')}
+                          className="w-8 text-center text-muted-foreground hover:text-foreground"
+                          title="输入页码跳转"
+                          aria-label="输入页码跳转"
+                        >
+                          ···
+                        </button>
+                      );
+                    }
                     return (
                       <Button
                         key={`page-${token}`}
@@ -418,6 +460,27 @@ const ArticleListComponent: React.FC<ArticleListProps> = ({
                 </Button>
               </div>
               <div className="flex flex-col items-center gap-1">
+                {pageJumpMode && (
+                  <form
+                    className="mb-2 flex items-center gap-2"
+                    onSubmit={(event) => {
+                      event.preventDefault();
+                      submitPageJump();
+                    }}
+                  >
+                    <Input
+                      autoFocus
+                      inputMode="numeric"
+                      pattern="[0-9]*"
+                      value={pageJumpInput}
+                      onChange={(event) => setPageJumpInput(event.target.value.replace(/[^0-9]/g, ''))}
+                      placeholder="页码"
+                      className="h-8 w-20 text-center text-xs"
+                    />
+                    <Button type="submit" size="sm" className="h-8 text-xs font-bold">跳转</Button>
+                    <Button type="button" variant="ghost" size="sm" className="h-8 text-xs" onClick={closePageJump}>取消</Button>
+                  </form>
+                )}
                 <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">
                   共 {filteredArticlesCount} 个活动 • 第 {currentPage} / {totalPages || 1} 页
                 </p>

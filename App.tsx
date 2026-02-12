@@ -1,5 +1,5 @@
 import React from 'react';
-import { Navigate, Route, Routes, useNavigate, useParams } from 'react-router-dom';
+import { Navigate, Route, Routes, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import { ChevronDown, ChevronUp, Clock3, Sparkles, Tags, X } from 'lucide-react';
 import { Article, Feed, FeedMeta, MediaUrl, NoticeAttachment } from './types';
@@ -329,6 +329,7 @@ const AppShell: React.FC<{
 }> = ({ mode, contentData, searchData }) => {
   const { slug } = useParams();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
 
   const [darkMode, setDarkMode] = React.useState<boolean>(() => {
     if (typeof window === 'undefined') return false;
@@ -345,7 +346,12 @@ const AppShell: React.FC<{
   const [activeTagFilters, setActiveTagFilters] = React.useState<string[]>([]);
   const [timedOnly, setTimedOnly] = React.useState(false);
   const [hideExpired, setHideExpired] = React.useState(false);
-  const [currentPage, setCurrentPage] = React.useState(1);
+  const [currentPage, setCurrentPage] = React.useState(() => {
+    const raw = searchParams.get('p');
+    const parsed = Number(raw);
+    if (Number.isInteger(parsed) && parsed > 0) return parsed;
+    return 1;
+  });
   const [activeArticle, setActiveArticle] = React.useState<Article | null>(null);
   const [searchQuery, setSearchQuery] = React.useState('');
   const [nowTs, setNowTs] = React.useState(() => Date.now());
@@ -658,6 +664,27 @@ const AppShell: React.FC<{
   const ARTICLES_PER_PAGE = 12;
   const totalPages = Math.max(1, Math.ceil(filteredArticles.length / ARTICLES_PER_PAGE));
   const visiblePageTokens = getVisiblePageTokens(currentPage, totalPages);
+  const pageParam = searchParams.get('p');
+
+  React.useEffect(() => {
+    const parsed = Number(pageParam);
+    const fromQuery = Number.isInteger(parsed) && parsed > 0 ? parsed : 1;
+    const normalized = Math.min(Math.max(fromQuery, 1), totalPages);
+    setCurrentPage((prev) => (prev === normalized ? prev : normalized));
+  }, [pageParam, totalPages]);
+
+  React.useEffect(() => {
+    const normalized = Math.min(Math.max(currentPage, 1), totalPages);
+    const targetParam = normalized > 1 ? String(normalized) : null;
+    if ((pageParam ?? null) === targetParam) return;
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      if (targetParam) next.set('p', targetParam);
+      else next.delete('p');
+      return next;
+    }, { replace: true });
+  }, [currentPage, pageParam, setSearchParams, totalPages]);
+
   const paginatedArticlesWithCategory = React.useMemo(() => {
     const start = (currentPage - 1) * ARTICLES_PER_PAGE;
     return filteredArticles.slice(start, start + ARTICLES_PER_PAGE);
