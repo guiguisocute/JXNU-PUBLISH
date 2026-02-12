@@ -69,6 +69,12 @@ schools:
         icon: ""
         enabled: true
         order: 10
+      - title: 25化工院微信群
+        number: "626920516"
+        url: ""
+        icon: ""
+        enabled: true
+        order: 20
   - slug: history-tourism
     name: 历史文化与旅游学院
     short_name: 史旅院
