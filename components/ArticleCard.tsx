@@ -138,9 +138,14 @@ export const ArticleCard: React.FC<ArticleCardProps> = React.memo(({
     const days = Math.floor(totalSeconds / 86400);
     const hours = Math.floor((totalSeconds % 86400) / 3600);
     const minutes = Math.floor((totalSeconds % 3600) / 60);
+    const seconds = totalSeconds % 60;
 
     if (days > 0) return `${days}天${hours}小时`;
     if (hours > 0) return `${hours}小时${minutes}分`;
+    if (totalSeconds < 600) {
+      if (minutes > 0) return `${minutes}分${seconds}秒`;
+      return `${seconds}秒`;
+    }
     return `${Math.max(1, minutes)}分钟`;
   }, [nowTs]);
 
@@ -156,10 +161,7 @@ export const ArticleCard: React.FC<ArticleCardProps> = React.memo(({
   }, [article.endAt, article.startAt, nowTs]);
 
   const countdownLabel = useMemo(() => `剩余 ${getCountdownText(article.endAt)}`, [article.endAt, getCountdownText]);
-  const countdownWhiteMix = useMemo(() => {
-    const ratio = (timing.progress - 50) / 20;
-    return Math.max(0, Math.min(1, ratio));
-  }, [timing.progress]);
+  const useWhiteCountdownText = timing.progress >= 45;
 
   return (
     <motion.div
@@ -300,8 +302,7 @@ export const ArticleCard: React.FC<ArticleCardProps> = React.memo(({
                 />
                 <div className="absolute inset-0 flex items-center justify-center text-[11px] font-semibold">
                   <span className="relative leading-none">
-                    <span className="text-foreground">{countdownLabel}</span>
-                    <span className="absolute inset-0 text-primary-foreground transition-opacity" style={{ opacity: countdownWhiteMix }}>
+                    <span className={cn(useWhiteCountdownText ? 'text-primary-foreground' : 'text-foreground')}>
                       {countdownLabel}
                     </span>
                   </span>

@@ -352,11 +352,23 @@ const AppShell: React.FC<{
     localStorage.setItem(READ_KEY, JSON.stringify(Array.from(readArticleIds)));
   }, [readArticleIds]);
 
+  const hasSecondLevelCountdown = React.useMemo(() => {
+    return contentData.notices.some((notice) => {
+      if (!notice.startAt || !notice.endAt) return false;
+      const start = new Date(notice.startAt).getTime();
+      const end = new Date(notice.endAt).getTime();
+      if (!Number.isFinite(start) || !Number.isFinite(end) || end <= start) return false;
+      if (nowTs < start || nowTs > end) return false;
+      return end - nowTs < 10 * 60 * 1000;
+    });
+  }, [contentData.notices, nowTs]);
+
   React.useEffect(() => {
     if (activeArticle) return;  // modal 打开时暂停全局 timer，防止重渲染清除文字选区
-    const timer = window.setInterval(() => setNowTs(Date.now()), 30000);
+    const intervalMs = hasSecondLevelCountdown ? 1000 : 30000;
+    const timer = window.setInterval(() => setNowTs(Date.now()), intervalMs);
     return () => window.clearInterval(timer);
-  }, [activeArticle]);
+  }, [activeArticle, hasSecondLevelCountdown]);
 
   const schoolFeedEntries = React.useMemo(() => {
     const map = new Map<string, { meta: FeedMeta; feed: Feed }>();
