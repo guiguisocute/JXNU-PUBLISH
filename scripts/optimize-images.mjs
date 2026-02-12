@@ -22,7 +22,9 @@ const runFfmpeg = (args) => {
     throw result.error;
   }
   if (result.status !== 0) {
-    const err = result.stderr?.toString()?.trim() || 'unknown ffmpeg error';
+    const stderr = result.stderr?.toString()?.trim();
+    const stdout = result.stdout?.toString()?.trim();
+    const err = stderr || stdout || `ffmpeg exited with status ${String(result.status)}`;
     throw new Error(err);
   }
 };
