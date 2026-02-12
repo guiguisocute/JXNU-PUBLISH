@@ -30,10 +30,10 @@ jobs:
     runs-on: ubuntu-latest
     env:
       NODE_VERSION: "22"
-      SITE_URL: ${{ secrets.PROD_SITE_URL }}
-      DEPLOY_HOST: ${{ secrets.PROD_DEPLOY_HOST }}
-      DEPLOY_PORT: ${{ secrets.PROD_DEPLOY_PORT != '' && secrets.PROD_DEPLOY_PORT || '22' }}
-      DEPLOY_USER: ${{ secrets.PROD_DEPLOY_USER }}
+      SITE_URL: ${{ secrets.PROD_SITE_URL != '' && secrets.PROD_SITE_URL || secrets.SITE_URL }}
+      DEPLOY_HOST: ${{ secrets.PROD_DEPLOY_HOST != '' && secrets.PROD_DEPLOY_HOST || secrets.DEPLOY_HOST }}
+      DEPLOY_PORT: ${{ secrets.PROD_DEPLOY_PORT != '' && secrets.PROD_DEPLOY_PORT || secrets.DEPLOY_PORT != '' && secrets.DEPLOY_PORT || '22' }}
+      DEPLOY_USER: ${{ secrets.PROD_DEPLOY_USER != '' && secrets.PROD_DEPLOY_USER || secrets.DEPLOY_USER }}
       DEPLOY_PATH: ${{ secrets.PROD_DEPLOY_PATH }}
 
     steps:
@@ -70,7 +70,7 @@ jobs:
       - name: Setup SSH agent
         uses: webfactory/ssh-agent@v0.9.0
         with:
-          ssh-private-key: ${{ secrets.PROD_DEPLOY_SSH_KEY }}
+          ssh-private-key: ${{ secrets.PROD_DEPLOY_SSH_KEY != '' && secrets.PROD_DEPLOY_SSH_KEY || secrets.DEPLOY_SSH_KEY }}
 
       - name: Add deploy host to known_hosts
         run: ssh-keyscan -p "$DEPLOY_PORT" "$DEPLOY_HOST" >> ~/.ssh/known_hosts
