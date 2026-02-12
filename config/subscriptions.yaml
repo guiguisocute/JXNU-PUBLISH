@@ -1,4 +1,5 @@
 version: 2
+# 订阅层可选字段：number（用于同名群时的人类可读标识，不参与前端展示）
 schools:
   - slug: ai
     name: 人工智能学院
@@ -7,16 +8,19 @@ schools:
     icon: /img/schoolicon/ai.webp
     subscriptions:
       - title: 22-24级团支书
+        number: "849400261"
         url: ""
         icon: ""
         enabled: true
         order: 10
       - title: 24级计算机心委+学委
+        number: "wx-ai-1"
         url: ""
         icon: ""
         enabled: true
         order: 20
       - title: 25-26学年学生干部通知群
+        number: "1041877533"
         url: ""
         icon: ""
         enabled: true

@@ -260,6 +260,7 @@ const parseConfig = async () => {
       }
 
       const title = ensureString(item.title, `schools[${school.slug}].subscriptions[${index}].title`, CONFIG_PATH);
+      const number = item.number == null ? '' : String(item.number).trim();
       const url = String(item.url || '').trim();
       const key = url || title;
       const suffix = slugifyChannel(key);
@@ -275,6 +276,7 @@ const parseConfig = async () => {
         schoolName: school.name,
         schoolIcon: school.icon,
         title,
+        number,
         url,
         icon: rawIcon || (isWaitingSource ? '/img/subicon/waiting-dots.svg' : '/img/subicon/group-default.svg'),
         enabled: item.enabled !== false,
@@ -323,13 +325,25 @@ const loadCards = async ({ schoolMap, subscriptionMap }) => {
     if (!schoolMap.has(schoolSlug)) fail(`Invalid school_slug: ${schoolSlug}`, filePath);
     const school = schoolMap.get(schoolSlug);
 
-    const subscriptionId = ensureString(parsed.data.subscription_id, 'subscription_id', filePath);
-    const subscription = subscriptionMap.get(subscriptionId);
-    if (!subscription) fail(`Invalid subscription_id: ${subscriptionId}`, filePath);
-    if (!subscription.enabled) fail(`subscription_id is disabled: ${subscriptionId}`, filePath);
-    if (subscription.schoolSlug !== schoolSlug) {
-      fail(`subscription_id(${subscriptionId}) does not belong to school_slug(${schoolSlug})`, filePath);
+    const sourceChannel = String(parsed.data.source?.channel || '').trim();
+    const legacySubscriptionId = String(parsed.data.subscription_id || '').trim();
+
+    let subscriptionId = sourceChannel ? `${schoolSlug}-${slugifyChannel(sourceChannel)}` : '';
+    let subscription = subscriptionId ? subscriptionMap.get(subscriptionId) : null;
+
+    if (!subscription && legacySubscriptionId) {
+      const fallback = subscriptionMap.get(legacySubscriptionId);
+      if (fallback && fallback.schoolSlug === schoolSlug) {
+        subscription = fallback;
+        subscriptionId = legacySubscriptionId;
+      }
     }
+
+    if (!subscription) {
+      if (!sourceChannel) fail('Missing source.channel', filePath);
+      fail(`Invalid source.channel(${sourceChannel}), cannot map to subscription in school_slug(${schoolSlug})`, filePath);
+    }
+    if (!subscription.enabled) fail(`source.channel maps to disabled subscription_id: ${subscriptionId}`, filePath);
 
     const parsedStart = parsed.data.start_at ? toIso(parsed.data.start_at, filePath) : '';
     const parsedEnd = parsed.data.end_at ? toIso(parsed.data.end_at, filePath) : '';
@@ -344,7 +358,7 @@ const loadCards = async ({ schoolMap, subscriptionMap }) => {
     notices.push({
       id,
       schoolSlug,
-      schoolName: String(parsed.data.school_name || school?.name || schoolSlug),
+      schoolName: String(school?.name || schoolSlug),
       subscriptionId,
       title: String(parsed.data.title || '').trim(),
       description: String(parsed.data.description || markdownToPlainText(markdown).slice(0, 180) || '').trim(),
@@ -357,7 +371,7 @@ const loadCards = async ({ schoolMap, subscriptionMap }) => {
       startAt: parsedStart || (parsedEnd ? publishedIso : ''),
       endAt: parsedEnd,
       source: {
-        channel: String(parsed.data.source?.channel || subscription.title || '').trim(),
+        channel: sourceChannel || subscription.title,
         sender: String(parsed.data.source?.sender || '').trim(),
       },
       attachments: mergeAttachments(frontmatterAttachments, inlineAttachments),
@@ -449,6 +463,7 @@ const compile = ({ notices, conclusions, schools, subscriptions, schoolMap }) =>
       schoolSlug: item.schoolSlug,
       schoolName: schoolMap.get(item.schoolSlug)?.name || item.schoolName || item.schoolSlug,
       title: item.title,
+      number: item.number,
       url: item.url,
       icon: item.icon,
       enabled: item.enabled,

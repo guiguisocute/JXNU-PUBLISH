@@ -190,7 +190,10 @@ export const NoticeDetailModal: React.FC<NoticeDetailModalProps> = React.memo(({
   }, [article?.endAt, article?.startAt, nowTs]);
 
   const countdownLabel = React.useMemo(() => `剩余 ${getCountdownText(article?.endAt)}`, [article?.endAt, getCountdownText]);
-  const useWhiteCountdownText = timing.progress >= 45;
+  const countdownWhiteMix = React.useMemo(() => {
+    const ratio = (timing.progress - 45) / 15;
+    return Math.max(0, Math.min(1, ratio));
+  }, [timing.progress]);
 
   React.useEffect(() => {
     if (!article) return;
@@ -285,6 +288,8 @@ export const NoticeDetailModal: React.FC<NoticeDetailModalProps> = React.memo(({
     () => renderSimpleMarkdown(article?.description || ''),
     [article?.description]
   );
+  const sourceChannelText = String(article?.source?.channel || article?.feedTitle || '未知群号').trim() || '未知群号';
+  const sourceSenderText = String(article?.source?.sender || article?.author || '未知发布人').trim() || '未知发布人';
 
   return (
     <AnimatePresence>
@@ -358,7 +363,12 @@ export const NoticeDetailModal: React.FC<NoticeDetailModalProps> = React.memo(({
                         />
                         <div className="absolute inset-0 flex items-center justify-center text-xs font-semibold">
                           <span className="relative leading-none">
-                            <span className={useWhiteCountdownText ? 'text-primary-foreground' : 'text-foreground'}>
+                            <span className="text-foreground">{countdownLabel}</span>
+                            <span
+                              className="absolute inset-0 text-primary-foreground transition-opacity"
+                              style={{ opacity: countdownWhiteMix }}
+                              aria-hidden="true"
+                            >
                               {countdownLabel}
                             </span>
                           </span>
@@ -441,9 +451,13 @@ export const NoticeDetailModal: React.FC<NoticeDetailModalProps> = React.memo(({
                   </section>
                 )}
 
+                <p className="mb-4 text-sm italic text-muted-foreground">以下为通知原文：</p>
+
                 <article className="prose prose-slate max-w-none text-base leading-relaxed dark:prose-invert overflow-x-hidden prose-pre:max-w-full prose-pre:overflow-x-auto prose-pre:whitespace-pre-wrap prose-code:break-all prose-p:break-words prose-p:[overflow-wrap:anywhere] prose-li:break-words prose-li:[overflow-wrap:anywhere] prose-headings:break-words prose-headings:[overflow-wrap:anywhere] prose-a:break-all prose-img:max-w-full prose-table:block prose-table:max-w-full prose-table:overflow-x-auto">
                   <div dangerouslySetInnerHTML={{ __html: article.content }} />
                 </article>
+
+                <p className="mt-4 text-sm italic text-muted-foreground">{`————转发信息来源：${sourceChannelText}、发送者：${sourceSenderText}`}</p>
 
               </div>
             </ScrollArea>

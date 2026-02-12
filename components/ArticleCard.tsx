@@ -161,7 +161,10 @@ export const ArticleCard: React.FC<ArticleCardProps> = React.memo(({
   }, [article.endAt, article.startAt, nowTs]);
 
   const countdownLabel = useMemo(() => `剩余 ${getCountdownText(article.endAt)}`, [article.endAt, getCountdownText]);
-  const useWhiteCountdownText = timing.progress >= 45;
+  const countdownWhiteMix = useMemo(() => {
+    const ratio = (timing.progress - 45) / 15;
+    return Math.max(0, Math.min(1, ratio));
+  }, [timing.progress]);
 
   return (
     <motion.div
@@ -302,7 +305,12 @@ export const ArticleCard: React.FC<ArticleCardProps> = React.memo(({
                 />
                 <div className="absolute inset-0 flex items-center justify-center text-[11px] font-semibold">
                   <span className="relative leading-none">
-                    <span className={cn(useWhiteCountdownText ? 'text-primary-foreground' : 'text-foreground')}>
+                    <span className="text-foreground">{countdownLabel}</span>
+                    <span
+                      className="absolute inset-0 text-primary-foreground transition-opacity"
+                      style={{ opacity: countdownWhiteMix }}
+                      aria-hidden="true"
+                    >
                       {countdownLabel}
                     </span>
                   </span>

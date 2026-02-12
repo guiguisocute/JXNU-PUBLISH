@@ -55,6 +55,7 @@ type CompiledContent = {
     schoolSlug: string;
     schoolName: string;
     title: string;
+    number?: string;
     url: string;
     icon: string;
     enabled: boolean;

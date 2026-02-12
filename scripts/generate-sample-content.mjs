@@ -193,7 +193,6 @@ const toTimeWindow = (index) => {
 const makeCardFrontmatter = ({
   id,
   school,
-  subscriptionId,
   title,
   description,
   published,
@@ -225,8 +224,6 @@ const makeCardFrontmatter = ({
     '---',
     `id: ${toYamlString(id)}`,
     `school_slug: ${toYamlString(school.slug)}`,
-    `subscription_id: ${toYamlString(subscriptionId)}`,
-    `school_name: ${toYamlString(school.name)}`,
     `title: ${toYamlString(title)}`,
     `description: ${toYamlString(description)}`,
     `published: ${published}`,
@@ -272,7 +269,6 @@ const main = async () => {
     const frontmatter = makeCardFrontmatter({
       id,
       school: aiSchool,
-      subscriptionId: `${aiSchool.slug}-default`,
       title,
       description,
       published: date,
@@ -296,7 +292,6 @@ const main = async () => {
     const frontmatter = makeCardFrontmatter({
       id,
       school,
-      subscriptionId: `${school.slug}-default`,
       title: `${school.name} 未接入`,
       description: 'JXNU PUBLISH希望更多的学院可以接入我们的通知源，**打破学院之间的信息壁垒，促进师大的信息流通效率**，非常希望未接入的学院的班委、老师、可以联系作者，万分感激！\\n邮箱：guiguisocute@qq.com',
       published: '2026-02-01T09:00:00+08:00',

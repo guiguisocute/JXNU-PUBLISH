@@ -6,16 +6,6 @@ const ROOT = process.cwd();
 const CONFIG_PATH = path.join(ROOT, 'config', 'subscriptions.yaml');
 const CARD_DIR = path.join(ROOT, 'content', 'card');
 
-const slugify = (value) => String(value || '')
-  .toLowerCase()
-  .replace(/[^a-z0-9\u4e00-\u9fa5]+/g, '-')
-  .replace(/^-+|-+$/g, '');
-
-const makeSubscriptionId = (schoolSlug, sub) => {
-  const key = String(sub.url || '').trim() || String(sub.title || '').trim();
-  return `${schoolSlug}-${slugify(key)}`;
-};
-
 const run = async () => {
   const configRaw = await fs.readFile(CONFIG_PATH, 'utf8');
   const config = YAML.parse(configRaw);
@@ -29,7 +19,6 @@ const run = async () => {
 
     const schoolSlug = String(school.slug || '').trim();
     const schoolName = String(school.name || '').trim();
-    const subId = makeSubscriptionId(schoolSlug, firstSub);
     const subTitle = String(firstSub.title || '').trim() || schoolName;
     const id = `20260210-${schoolSlug}-099`;
     const filePath = path.join(CARD_DIR, schoolSlug, `${id}.md`);
@@ -38,8 +27,6 @@ const run = async () => {
       '---',
       `id: "${id}"`,
       `school_slug: "${schoolSlug}"`,
-      `subscription_id: "${subId}"`,
-      `school_name: "${schoolName}"`,
       `title: "${schoolName}院徽回退展示测试"`,
       `description: "用于测试无封面卡片时，是否按学院展示院徽并在无匹配时回退校徽。"`,
       "published: '2026-02-10T12:00:00+08:00'",

@@ -150,11 +150,9 @@ pnpm run preview
 `config/subscriptions.yaml` 采用“学院包裹订阅源”的层级结构：
 
 - 学院层字段：`slug`、`name`、`short_name`、`order`、`icon`
-- 订阅层字段：`title`、`url`、`icon`、`enabled`、`order`
-- `subscription_id` 由编译脚本自动生成，不在 YAML 手写：
-  - 优先使用 `url` 参与拼接
-  - `url` 为空时使用 `title`
-  - 规则：`<school_slug>-<slugify(url 或 title)>`
+- 订阅层字段：`title`、`number`（可选）、`url`、`icon`、`enabled`、`order`
+- 卡片 frontmatter 不再手写 `subscription_id`，编译时由 `school_slug + source.channel` 自动推导：
+  - 规则：`<school_slug>-<slugify(source.channel)>`
 
 示例：
 
@@ -168,13 +166,14 @@ schools:
     icon: ""
     subscriptions:
       - title: 25-26学年学生干部通知群
+        number: "123456789"
         url: ""
         icon: ""
         enabled: true
         order: 30
 ```
 
-说明：`order` 为学院内排序；若同一学院下两个订阅生成出相同 id，编译会直接报错。
+说明：`order` 为学院内排序；`number` 仅用于人工查阅（如同名群区分），不参与前端展示；若同一学院下两个订阅生成出相同 id，编译会直接报错。
 
 ---
 
@@ -184,8 +183,6 @@ schools:
 ---
 id: "20260201-ai-001"
 school_slug: "ai"
-subscription_id: "ai-25-26学年学生干部通知群"
-school_name: "人工智能学院"
 title: "示例通知"
 description: "通知摘要"
 published: 2026-02-01T09:00:00+08:00
@@ -198,7 +195,7 @@ extra_url: ""
 start_at: ""
 end_at: ""
 source:
-  channel: "示例频道"
+  channel: "25-26学年学生干部通知群"
   sender: "示例发送方"
 attachments: []
 ---

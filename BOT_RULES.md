@@ -42,7 +42,7 @@
 
 ### 阶段一：脚本仅可生成的内容
 
-- 允许脚本生成/填充：`id`、`school_slug`、`subscription_id`、`school_name`、`published`、`pinned`、`cover`、`source`、`attachments`、正文原文。
+- 允许脚本生成/填充：`id`、`school_slug`、`published`、`pinned`、`cover`、`source`、`attachments`、正文原文。
 - `cover` 规则：有图片则取第一张图片；无图片则留空。
 - 正文必须照搬源文（允许去掉转发头与纯空段），不得脚本总结改写。
 
@@ -56,8 +56,7 @@ Frontmatter 字段必须满足项目编译要求：
 
 - `id`: 按 `YYYYMMDD-school_slug-序号` 生成，确保全局唯一。
 - `school_slug`: 按映射表判定；未命中写 `unknown`。
-- `subscription_id`: 必填，且必须与 `config/subscriptions.yaml` 中配置一一对应（由配置中的 `url` 优先、否则 `title` 自动拼接生成）。
-- `school_name`: 与 `school_slug` 对应名称。
+- `subscription_id`: 不手写；由编译器根据 `school_slug + source.channel` 自动推导并校验。
 - `title`: 必须由模型逐条生成，禁止脚本生成。
 - `description`: 必须由模型逐条生成，长度必须在 50~100 字，要求简练干脆。
 - `published`: 使用转发头中的原始时间戳（ISO 可解析格式）。
@@ -128,9 +127,9 @@ Frontmatter 字段必须满足项目编译要求：
 
 - `schools` 为数组，每个学院下包含 `subscriptions` 数组。
 - 学院层可维护 `icon`；订阅层可维护 `icon`。
-- 订阅层仅使用 `title`、`url`、`icon`、`enabled`、`order` 等字段。
+- 订阅层仅使用 `title`、`number`（可选，仅人工查阅）、`url`、`icon`、`enabled`、`order` 等字段。
 - 不使用 `sub-title` 字段。
-- `subscription_id` 不手写：由编译器按 `url` 优先、否则 `title` 自动生成。
+- `subscription_id` 不手写：由编译器按 `school_slug + source.channel` 自动推导。
 
 按以下顺序判断 `school_slug`：
 
@@ -190,7 +189,7 @@ Frontmatter 字段必须满足项目编译要求：
 ## 历史搬运踩坑记录
 
 - `init-sept` 历史手动搬运时，若缺少转发头字段（来源群/发送者等）可忽略，不作为阻断条件。
-- 该批测试数据默认订阅源固定写入 `25-26学年学生干部通知群`，对应 `subscription_id` 为 `ai-25-26学年学生干部通知群`。
+- 该批测试数据默认订阅源固定写入 `25-26学年学生干部通知群`，编译后自动映射为 `ai-25-26学年学生干部通知群`。
 - 旧消息里的 Windows 本地图片路径（如 `file://D:\...`）必须规范化为 URL 形式（`file:///D:/...`），否则 frontmatter YAML 会因转义字符报错。
 - `[文件]` 占位符在历史文本中仅表示有附件，搬运时按顺序关联同目录文件并写入 `attachments`。
 - 图片不能只放在 `attachments`：需要同时写入正文 Markdown；若同一通知有多张图，正文按顺序全部展示。
@@ -257,5 +256,5 @@ Frontmatter 字段必须满足项目编译要求：
 - **灾后重建**：若发生大规模文件清空，应立即通过 Git 回滚或基于备份重新运行 `migrate` 脚本物理生成。
 
 ### 字段唯一性
-- **school_slug** 与 **subscription_id**：在特定学院（如 `ai`）的历史搬运中，这两个字段必须保持全局一致，严禁出现拼写错误或遗漏。
+- **school_slug** 与 **source.channel**：在特定学院（如 `ai`）的历史搬运中，这两个字段必须保持一致，严禁出现拼写错误或遗漏。
 

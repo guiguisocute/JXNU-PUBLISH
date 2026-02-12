@@ -1,8 +1,6 @@
 ---
 id: "20260201-urban-construction-001"
 school_slug: "urban-construction"
-subscription_id: "urban-construction-待接入"
-school_name: "城市建设学院"
 title: "城市建设学院 未接入"
 description: "JXNU PUBLISH希望更多的学院可以接入我们的通知源，**打破学院之间的信息壁垒，促进师大的信息流通效率**，非常希望未接入的学院的班委、老师、可以联系作者，万分感激！
 - 邮箱：guiguisocute@qq.com"
