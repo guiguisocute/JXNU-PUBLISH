@@ -10,12 +10,25 @@ lerna-debug.log*
 # Dependencies
 node_modules
 .pnpm-debug.log*
+.pnpm-store/
 
 # Production builds
 dist
 dist-ssr
 build
 generated
+public
+public/attachments/
+public/covers/
+public/img/
+public/init-sept/
+public/init-oct/
+public/init-nov/
+public/init-dec/
+public/init-jan/
+public/generated/
+public/icon.ico
+public/default-placeholder.svg
 
 # Environment variables (contains sensitive API keys)
 .env
@@ -36,9 +49,14 @@ data/
 # Tooling
 .opencode/
 .sisyphus/
+.claude/
 skill/
 skill-ex/
 skills/
+.claude/settings.local.json
+.claude/*.zip
+.vercel/
+.wrangler/
 
 # Editor directories and files
 .vscode/*
@@ -75,6 +93,8 @@ pids
 # Coverage directory used by tools like istanbul
 coverage
 *.lcov
+.coverage
+.coverage.*
 
 # nyc test coverage
 .nyc_output
@@ -110,12 +130,21 @@ jspm_packages/
 # Next.js build output
 .next
 
+# TypeScript incremental cache
+*.tsbuildinfo
+
+# Python cache
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
 # Nuxt.js build / generate output
 .nuxt
 
 # Gatsby files
 .cache/
-public
 
 # Storybook build outputs
 .out
