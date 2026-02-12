@@ -1,0 +1,88 @@
+name: Build and Deploy Main
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "content/**"
+      - "worklog/**"
+      - "scripts/**"
+      - "config/**"
+      - "public/**"
+      - "src/**"
+      - "components/**"
+      - "api/**"
+      - "package.json"
+      - "pnpm-lock.yaml"
+      - "vite.config.*"
+      - "tsconfig*.json"
+      - "vercel.json"
+      - ".github/workflows/deploy-main.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-static-site-main
+  cancel-in-progress: true
+
+jobs:
+  build-and-deploy-main:
+    runs-on: ubuntu-latest
+    env:
+      NODE_VERSION: "22"
+      SITE_URL: ${{ secrets.PROD_SITE_URL }}
+      DEPLOY_HOST: ${{ secrets.PROD_DEPLOY_HOST }}
+      DEPLOY_PORT: ${{ secrets.PROD_DEPLOY_PORT != '' && secrets.PROD_DEPLOY_PORT || '22' }}
+      DEPLOY_USER: ${{ secrets.PROD_DEPLOY_USER }}
+      DEPLOY_PATH: ${{ secrets.PROD_DEPLOY_PATH }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+
+      - name: Validate required secrets
+        run: |
+          test -n "$SITE_URL" || (echo "Missing secret: PROD_SITE_URL" && exit 1)
+          test -n "$DEPLOY_HOST" || (echo "Missing secret: PROD_DEPLOY_HOST" && exit 1)
+          test -n "$DEPLOY_USER" || (echo "Missing secret: PROD_DEPLOY_USER" && exit 1)
+          test -n "$DEPLOY_PATH" || (echo "Missing secret: PROD_DEPLOY_PATH" && exit 1)
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Install ffmpeg
+        run: sudo apt-get update && sudo apt-get install -y ffmpeg
+
+      - name: Build dist
+        run: pnpm run build
+
+      - name: Setup SSH agent
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.PROD_DEPLOY_SSH_KEY }}
+
+      - name: Add deploy host to known_hosts
+        run: ssh-keyscan -p "$DEPLOY_PORT" "$DEPLOY_HOST" >> ~/.ssh/known_hosts
+
+      - name: Verify remote deploy path is writable
+        run: |
+          ssh -p "$DEPLOY_PORT" "$DEPLOY_USER@$DEPLOY_HOST" "set -e; test -n '$DEPLOY_PATH'; mkdir -p '$DEPLOY_PATH'; test -w '$DEPLOY_PATH'"
+
+      - name: Deploy dist via rsync
+        run: |
+          rsync -az --delete \
+            --omit-dir-times \
+            --no-perms --no-owner --no-group \
+            -e "ssh -p $DEPLOY_PORT" \
+            dist/ "$DEPLOY_USER@$DEPLOY_HOST:$DEPLOY_PATH/"

@@ -359,6 +359,8 @@ export const LeftSidebar: React.FC<LeftSidebarProps> = ({
             <Button
               variant={sidebarMode === 'list' ? "secondary" : "ghost"}
               size="icon"
+              aria-label="切换为列表模式"
+              title="切换为列表模式"
               className="h-8 w-8 md:h-7 md:w-7 rounded-sm"
               onClick={() => setSidebarMode('list')}
             >
@@ -367,6 +369,8 @@ export const LeftSidebar: React.FC<LeftSidebarProps> = ({
             <Button
               variant={sidebarMode === 'grid' ? "secondary" : "ghost"}
               size="icon"
+              aria-label="切换为网格模式"
+              title="切换为网格模式"
               className="h-8 w-8 md:h-7 md:w-7 rounded-sm"
               onClick={() => setSidebarMode('grid')}
             >
