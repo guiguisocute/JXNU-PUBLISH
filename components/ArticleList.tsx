@@ -420,7 +420,7 @@ const ArticleListComponent: React.FC<ArticleListProps> = ({
               </div>
               <div className="flex flex-col items-center gap-1">
                 <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">
-                  共 {filteredArticlesCount} 篇文章 • 第 {currentPage} / {totalPages || 1} 页
+                  共 {filteredArticlesCount} 个活动 • 第 {currentPage} / {totalPages || 1} 页
                 </p>
                 {!selectedDate && totalCount && loadedCount && totalCount > loadedCount && activeFilters.length === 0 && (
                   <p className="text-[10px] font-black text-muted-foreground/50 uppercase tracking-widest">

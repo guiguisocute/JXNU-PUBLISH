@@ -101,7 +101,7 @@ export const FeedItem: React.FC<FeedItemProps> = React.memo(({ feedMeta, feedCon
         <div className="flex-1 overflow-hidden">
           <p className={cn("font-bold text-sm truncate", isSelected ? "text-primary-foreground" : "text-foreground")}>{displayTitle}</p>
           {typeof resolvedCount === 'number' ? (
-            <p className={cn("text-[10px] font-medium truncate", isSelected ? "text-primary-foreground/70" : "text-muted-foreground")}>{resolvedCount} 篇文章</p>
+            <p className={cn("text-[10px] font-medium truncate", isSelected ? "text-primary-foreground/70" : "text-muted-foreground")}>{resolvedCount} 个活动</p>
           ) : (
             <div className="h-2 w-12 bg-muted rounded mt-1 animate-pulse" />
           )}
