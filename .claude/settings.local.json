@@ -5,7 +5,9 @@
       "Bash(npx marked:*)",
       "Bash(node -e:*)",
       "Bash(node scripts/compile-content.mjs:*)",
-      "WebSearch"
+      "WebSearch",
+      "Bash(find:*)",
+      "Bash(ls:*)"
     ]
   }
 }
