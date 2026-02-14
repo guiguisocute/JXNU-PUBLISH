@@ -95,6 +95,11 @@ archive/
 ### 5.2 字段规则（当前项目口径）
 
 - 必填：`id`、`school_slug`、`title`、`description`、`published`、`source`。
+- `description` 必须使用 YAML 折叠块标量 `>-` 语法，禁止使用双引号包裹（避免中文括号等特殊字符导致解析错误）：
+  ```yaml
+  description: >-
+      50~100字描述内容
+  ```
 - `subscription_id` 由编译器自动推导：`school_slug + source.channel`。
 - `school_slug` 缺失或非法：自动回退 `unknown`。
 - `source.channel` 缺失：回退到 `未知来源`。
@@ -173,7 +178,7 @@ archive/
 ## 8. 质量红线
 
 - 标题/描述必须可读、非模板化、非机械截断。
-- `description` 建议 50~100 字，覆盖对象、动作、时间约束。
+- `description` 建议 50~100 字，覆盖对象、动作、时间约束，必须使用 `>-` 语法。
 - 标签最多 5 个，建议 2~4 个有效业务标签。
 - 禁止正文代码块化污染（`````）。
 - 禁止生成与正文矛盾的时间或附件信息。

@@ -7,7 +7,9 @@
       "Bash(node scripts/compile-content.mjs:*)",
       "WebSearch",
       "Bash(find:*)",
-      "Bash(ls:*)"
+      "Bash(ls:*)",
+      "Bash(comm:*)",
+      "Bash(npm run build:content:*)"
     ]
   }
 }
