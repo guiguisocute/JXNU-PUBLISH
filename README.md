@@ -1,3 +1,4 @@
+网站UI设计基于 @Sallyn0225 的 [gemini-rss-app](https://github.com/Sallyn0225/gemini-rss-app),谢谢佬的无私开源！
 # JXNU PUBLISH
 
 JXNU PUBLISH 是一个面向江西师范大学多学院的静态通知聚合站。
